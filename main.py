@@ -1,9 +1,12 @@
 import cv2
 from webcam_utils import *
+from eye_contact_detector import *
 
 cap=cv2.VideoCapture(0)
 while True:
     frame=webcamframe(cap)
+    rgbframe=bgr2rgb(frame)
+    frame=display_facial_landmarks(rgbframe)
     if frame is None:
         print("Frame not captured!")
         break
