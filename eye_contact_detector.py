@@ -58,4 +58,14 @@ def blinking(right,left,lastblinktime,cooldown=0.15):
             lastblinktime=currenttime
             return True,lastblinktime
     return False,lastblinktime
+
+def blinkperminute(blinkcount,lastcounttime):
+    currenttime=time.time()
+    timex=currenttime-lastcounttime
+    if timex==0:
+        return 0,lastcounttime
+    bpm=(blinkcount/timex)*60
+    lastcounttime=currenttime
+    return bpm,lastcounttime
+        
     
