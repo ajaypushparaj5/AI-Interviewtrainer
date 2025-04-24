@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import mediapipe as mp
+import time
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
@@ -36,3 +37,25 @@ def display_facial_landmarks(rgb_frame):
                 )
             )
     return rgb_frame
+
+
+def get_eye_distance(rgb_frame,results,top,bottom):
+    h, w, _ = rgb_frame.shape
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+            top=face_landmarks.landmark[top]
+            bottom=face_landmarks.landmark[bottom]
+            topy=int(top.y*h)
+            bottomy=int(bottom.y*h)
+            return abs(topy-bottomy)
+    return 0
+
+def blinking(right,left,lastblinktime,cooldown=0.15):
+    currenttime=time.time()
+    
+    if right<4 and left<4:
+        if currenttime-lastblinktime>cooldown:
+            lastblinktime=currenttime
+            return True,lastblinktime
+    return False,lastblinktime
+    
