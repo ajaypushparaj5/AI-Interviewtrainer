@@ -68,4 +68,31 @@ def blinkperminute(blinkcount,lastcounttime):
     lastcounttime=currenttime
     return bpm,lastcounttime
         
+def gaze_detector(rgb_frame,results,lastgazetime):
+    currenttime=time.time()
+    h,w,_=rgb_frame.shape
+    if results.multi_face_landmarks:
+        for face_landmarks in results.multi_face_landmarks:
+            outer=face_landmarks.landmark[33]
+            inner=face_landmarks.landmark[133]
+            iris=face_landmarks.landmark[468]
+            outer_x=outer.x*w
+            inner_x=inner.x*w
+            iris_x=iris.x*w
+            top = face_landmarks.landmark[159]
+            bottom = face_landmarks.landmark[145]
+            iris_y = iris.y * h
+            top_y = top.y * h
+            bottom_y = bottom.y * h
+            if(inner_x-outer_x==0 or bottom_y-top_y == 0):
+                return False,lastgazetime
+            gaze_ratio=(iris_x-outer_x)/(inner_x-outer_x)
+            gaze_ratio_y=(iris_y-top_y)/(bottom_y-top_y)
+            if currenttime-lastgazetime>3:
+                if gaze_ratio<0.2 or gaze_ratio>0.6 or gaze_ratio_y<0.2 or gaze_ratio_y>0.6:
+                    lastgazetime=currenttime
+                    return True,lastgazetime
+                
+    return False,lastgazetime
+    
     
