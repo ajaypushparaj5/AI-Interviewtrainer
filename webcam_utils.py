@@ -9,8 +9,9 @@ def webcamframe(cap):
     else:
         return cv2.flip(frame,1)
     
-def webcamfeed(frame):
-    cv2.imshow("Webcam LiveFeed",frame)
+def webcamfeed(frame1):
+    # combine=np.hstack((frame1,frame2))
+    cv2.imshow("Webcam LiveFeed",frame1)
     
     
 def bgr2rgb(frame):
