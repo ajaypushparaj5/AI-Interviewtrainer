@@ -2,11 +2,15 @@ import cv2
 import mediapipe as mp
 import time
 
-mp_pose=mp.solutions.pose
-pose=mp_pose.Pose()
+mp_holistic=mp.solutions.holistic
+holistic = mp_holistic.Holistic(
+    static_image_mode=False,
+    model_complexity=1,
+    min_detection_confidence=0.5,
+    min_tracking_confidence=0.5
+)
 
-def display_pose(rgb_frame):
-    results=pose.process(rgb_frame)
+def display_pose(rgb_frame,results):
     if results.pose_landmarks:
         landmarks = results.pose_landmarks.landmark
         h, w, _ = rgb_frame.shape
@@ -20,6 +24,10 @@ def display_pose(rgb_frame):
     return rgb_frame
 
 def slouch_detector(rgb_frame,results,lastslouch):
+    if not results.pose_landmarks:
+        return False, lastslouch
+    
+    
     h,_,_=rgb_frame.shape
     left=results.pose_landmarks.landmark[11]
     right=results.pose_landmarks.landmark[12]

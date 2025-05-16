@@ -1,32 +1,33 @@
 import cv2
-import numpy as np
 import mediapipe as mp
 import time
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
+
+# Initialize FaceMesh with iris landmarks enabled
 face_mesh = mp_face_mesh.FaceMesh(
     static_image_mode=False,
     max_num_faces=1,
-    refine_landmarks=True,
+    refine_landmarks=True,    # IMPORTANT: enable iris detection
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
 )
 
-def display_facial_landmarks(rgb_frame):
+def display_facial_landmarks(rgb_frame, results):
     
     results = face_mesh.process(rgb_frame)
-
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             iris_indices = [468, 469, 470, 471, 472, 473, 474, 475, 476, 477]
             h, w, _ = rgb_frame.shape
+            # Draw iris points
             for idx in iris_indices:
                 pt = face_landmarks.landmark[idx]
-
                 x, y = int(pt.x * w), int(pt.y * h)
                 cv2.circle(rgb_frame, (x, y), 2, (255, 0, 0), -1)
 
+            # Draw face mesh connections
             mp_drawing.draw_landmarks(
                 image=rgb_frame,
                 landmark_list=face_landmarks,
@@ -39,16 +40,49 @@ def display_facial_landmarks(rgb_frame):
     return rgb_frame
 
 
-def get_eye_distance(rgb_frame,results,top,bottom):
+
+def get_eye_distance(rgb_frame, face_landmarks, top_idx, bottom_idx):
     h, w, _ = rgb_frame.shape
-    if results.multi_face_landmarks:
-        for face_landmarks in results.multi_face_landmarks:
-            top=face_landmarks.landmark[top]
-            bottom=face_landmarks.landmark[bottom]
-            topy=int(top.y*h)
-            bottomy=int(bottom.y*h)
-            return abs(topy-bottomy)
+    if face_landmarks:
+        top = face_landmarks.landmark[top_idx]
+        bottom = face_landmarks.landmark[bottom_idx]
+        top_y = int(top.y * h)
+        bottom_y = int(bottom.y * h)
+        return abs(top_y - bottom_y)
     return 0
+
+
+def gaze_detector(rgb_frame, face_landmarks, lastgazetime):
+    currenttime = time.time()
+    h, w, _ = rgb_frame.shape
+    if face_landmarks:
+        landmarks = face_landmarks.landmark
+        outer = landmarks[33]
+        inner = landmarks[133]
+        iris = landmarks[468]
+        top = landmarks[159]
+        bottom = landmarks[145]
+
+        outer_x = outer.x * w
+        inner_x = inner.x * w
+        iris_x = iris.x * w
+        iris_y = iris.y * h
+        top_y = top.y * h
+        bottom_y = bottom.y * h
+
+        if (inner_x - outer_x == 0) or (bottom_y - top_y == 0):
+            return False, lastgazetime
+
+        gaze_ratio = (iris_x - outer_x) / (inner_x - outer_x)
+        gaze_ratio_y = (iris_y - top_y) / (bottom_y - top_y)
+
+        if currenttime - lastgazetime > 3:
+            if gaze_ratio < 0.2 or gaze_ratio > 0.6 or gaze_ratio_y < 0.2 or gaze_ratio_y > 0.6:
+                lastgazetime = currenttime
+                return True, lastgazetime
+
+    return False, lastgazetime
+
 
 def blinking(right,left,lastblinktime,cooldown=0.15):
     currenttime=time.time()
@@ -67,32 +101,3 @@ def blinkperminute(blinkcount,lastcounttime):
     bpm=(blinkcount/timex)*60
     lastcounttime=currenttime
     return bpm,lastcounttime
-        
-def gaze_detector(rgb_frame,results,lastgazetime):
-    currenttime=time.time()
-    h,w,_=rgb_frame.shape
-    if results.multi_face_landmarks:
-        for face_landmarks in results.multi_face_landmarks:
-            outer=face_landmarks.landmark[33]
-            inner=face_landmarks.landmark[133]
-            iris=face_landmarks.landmark[468]
-            outer_x=outer.x*w
-            inner_x=inner.x*w
-            iris_x=iris.x*w
-            top = face_landmarks.landmark[159]
-            bottom = face_landmarks.landmark[145]
-            iris_y = iris.y * h
-            top_y = top.y * h
-            bottom_y = bottom.y * h
-            if(inner_x-outer_x==0 or bottom_y-top_y == 0):
-                return False,lastgazetime
-            gaze_ratio=(iris_x-outer_x)/(inner_x-outer_x)
-            gaze_ratio_y=(iris_y-top_y)/(bottom_y-top_y)
-            if currenttime-lastgazetime>3:
-                if gaze_ratio<0.2 or gaze_ratio>0.6 or gaze_ratio_y<0.2 or gaze_ratio_y>0.6:
-                    lastgazetime=currenttime
-                    return True,lastgazetime
-                
-    return False,lastgazetime
-    
-    
