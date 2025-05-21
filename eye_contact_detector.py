@@ -4,12 +4,10 @@ import time
 
 mp_face_mesh = mp.solutions.face_mesh
 mp_drawing = mp.solutions.drawing_utils
-
-# Initialize FaceMesh with iris landmarks enabled
 face_mesh = mp_face_mesh.FaceMesh(
     static_image_mode=False,
     max_num_faces=1,
-    refine_landmarks=True,    # IMPORTANT: enable iris detection
+    refine_landmarks=True,  
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5
 )
@@ -21,13 +19,11 @@ def display_facial_landmarks(rgb_frame, results):
         for face_landmarks in results.multi_face_landmarks:
             iris_indices = [468, 469, 470, 471, 472, 473, 474, 475, 476, 477]
             h, w, _ = rgb_frame.shape
-            # Draw iris points
+
             for idx in iris_indices:
                 pt = face_landmarks.landmark[idx]
                 x, y = int(pt.x * w), int(pt.y * h)
                 cv2.circle(rgb_frame, (x, y), 2, (255, 0, 0), -1)
-
-            # Draw face mesh connections
             mp_drawing.draw_landmarks(
                 image=rgb_frame,
                 landmark_list=face_landmarks,

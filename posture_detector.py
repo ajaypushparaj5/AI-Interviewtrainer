@@ -1,41 +1,87 @@
+# import cv2
+# import mediapipe as mp
+# import time
+
+# mp_holistic=mp.solutions.holistic
+# holistic = mp_holistic.Holistic(
+#     static_image_mode=False,
+#     model_complexity=1,
+#     min_detection_confidence=0.5,
+#     min_tracking_confidence=0.5
+# )
+
+# def display_pose(rgb_frame,results):
+#     if results.pose_landmarks:
+#         landmarks = results.pose_landmarks.landmark
+#         h, w, _ = rgb_frame.shape
+#         left_shoulder = landmarks[11]
+#         right_shoulder = landmarks[12]
+#         lx, ly = int(left_shoulder.x * w), int(left_shoulder.y * h)
+#         rx, ry = int(right_shoulder.x * w), int(right_shoulder.y * h)
+#         cv2.circle(rgb_frame, (lx, ly), 8, (255, 0, 0), -1)
+#         cv2.circle(rgb_frame, (rx, ry), 8, (255, 0, 0), -1)
+#         cv2.line(rgb_frame, (lx, ly), (rx, ry), (0, 255, 0), 2)
+#     return rgb_frame
+
+# def slouch_detector(rgb_frame,results,lastslouch):
+#     if not results.pose_landmarks:
+#         return False, lastslouch
+    
+    
+#     h,_,_=rgb_frame.shape
+#     left=results.pose_landmarks.landmark[11]
+#     right=results.pose_landmarks.landmark[12]
+#     ly=int(left.y*h)
+#     ry=int(right.y*h)
+#     current=time.time()
+#     if (current-lastslouch>=4):
+#         if abs(ly-ry)>20:
+#             lastslouch=current
+#             return True,lastslouch
+#     return False,lastslouch
+
+
 import cv2
 import mediapipe as mp
 import time
 
-mp_holistic=mp.solutions.holistic
-holistic = mp_holistic.Holistic(
-    static_image_mode=False,
-    model_complexity=1,
-    min_detection_confidence=0.5,
-    min_tracking_confidence=0.5
-)
-
-def display_pose(rgb_frame,results):
-    if results.pose_landmarks:
-        landmarks = results.pose_landmarks.landmark
+def display_pose(rgb_frame, results):
+    if results:
+        landmarks = results.landmark
         h, w, _ = rgb_frame.shape
-        left_shoulder = landmarks[11]
-        right_shoulder = landmarks[12]
+
+        left_shoulder = landmarks[11]  
+        right_shoulder = landmarks[12]  
+
         lx, ly = int(left_shoulder.x * w), int(left_shoulder.y * h)
         rx, ry = int(right_shoulder.x * w), int(right_shoulder.y * h)
+
         cv2.circle(rgb_frame, (lx, ly), 8, (255, 0, 0), -1)
         cv2.circle(rgb_frame, (rx, ry), 8, (255, 0, 0), -1)
         cv2.line(rgb_frame, (lx, ly), (rx, ry), (0, 255, 0), 2)
+
     return rgb_frame
 
-def slouch_detector(rgb_frame,results,lastslouch):
-    if not results.pose_landmarks:
+
+def slouch_detector(rgb_frame, results, lastslouch):
+    if not results:
         return False, lastslouch
-    
-    
-    h,_,_=rgb_frame.shape
-    left=results.pose_landmarks.landmark[11]
-    right=results.pose_landmarks.landmark[12]
-    ly=int(left.y*h)
-    ry=int(right.y*h)
-    current=time.time()
-    if (current-lastslouch>=4):
-        if abs(ly-ry)>20:
-            lastslouch=current
-            return True,lastslouch
-    return False,lastslouch
+
+    h, _, _ = rgb_frame.shape
+    landmarks = results.landmark
+
+    left_shoulder = landmarks[11]
+    right_shoulder = landmarks[12]
+
+    ly = int(left_shoulder.y * h)
+    ry = int(right_shoulder.y * h)
+
+    current = time.time()
+
+
+    if current - lastslouch >= 4:
+        if abs(ly - ry) > 20:  
+            lastslouch = current
+            return True, lastslouch
+
+    return False, lastslouch
