@@ -103,3 +103,53 @@ def hand_eye_contact(rgb_frame, face_landmarks, hand_landmarks, threshold=35):
             return True
     return False
 
+def hand_ear_contact(rgb_frame, face_landmarks, hand_landmarks, threshold=40):
+
+    if face_landmarks is None or hand_landmarks is None:
+        return False
+
+    h, w, _ = rgb_frame.shape
+
+    left_ear = face_landmarks.landmark[234]
+    right_ear = face_landmarks.landmark[454]
+
+    left_ear_point = (int(left_ear.x * w), int(left_ear.y * h))
+    right_ear_point = (int(right_ear.x * w), int(right_ear.y * h))
+
+
+    fingertip_indices = [4, 8, 12, 16, 20]
+    for idx in fingertip_indices:
+        print("checking ear..")
+        x = int(hand_landmarks.landmark[idx].x * w)
+        y = int(hand_landmarks.landmark[idx].y * h)
+        if distance((x, y), left_ear_point) < threshold or distance((x, y), right_ear_point) < threshold:
+            return True
+    return False
+
+
+def hand_neck_contact(rgb_frame, face_landmarks, hand_landmarks):
+    if face_landmarks is None or hand_landmarks is None:
+        return False
+
+    h, w, _ = rgb_frame.shape
+
+    # Chin landmark
+    chin = face_landmarks.landmark[152]
+    cx, cy = int(chin.x * w), int(chin.y * h)
+
+    # Define neck box below chin
+    neck_top = cy + 10
+    neck_bottom = cy + 90
+    neck_left = cx - 60
+    neck_right = cx + 60
+
+ 
+    fingertip_indices = [4, 8, 12, 16, 20]
+    for idx in fingertip_indices:
+        x = int(hand_landmarks.landmark[idx].x * w)
+        y = int(hand_landmarks.landmark[idx].y * h)
+        print("Checking neck contact at:", x, y)
+        if neck_left <= x <= neck_right and neck_top <= y <= neck_bottom:
+            return True
+    return False
+

@@ -43,3 +43,21 @@ def slouch_detector(rgb_frame, results, lastslouch):
             return True, lastslouch
 
     return False, lastslouch
+
+
+def arms_crossed_detector(results, threshold=0.15):
+    if not results:
+        return False
+
+    landmarks = results.landmark
+
+    left_wrist = landmarks[15]
+    right_wrist = landmarks[16]
+    left_shoulder = landmarks[11]
+    right_shoulder = landmarks[12]
+
+    # Condition: wrists are near opposite shoulders (in x-direction)
+    left_wrist_near_right_shoulder = abs(left_wrist.x - right_shoulder.x) < threshold
+    right_wrist_near_left_shoulder = abs(right_wrist.x - left_shoulder.x) < threshold
+
+    return left_wrist_near_right_shoulder and right_wrist_near_left_shoulder
