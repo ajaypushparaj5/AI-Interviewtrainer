@@ -3,10 +3,19 @@ from eye_contact_detector import *
 from posture_detector import *
 from hand_gesture import *
 
-def run_detection_session(log=print):
+def run_detection_session(video_path, log=print):
+    cap = cv2.VideoCapture(video_path)
+    run_analysis(cap, log)
+
+def run_live_session(log=print):
+    cap = cv2.VideoCapture(0)
+    run_analysis(cap, log)
+
+def run_analysis(cap, log=print):
     import cv2
     import mediapipe as mp
     import time
+
 
     mp_holistic = mp.solutions.holistic
     holistic = mp_holistic.Holistic(
@@ -18,28 +27,21 @@ def run_detection_session(log=print):
         min_tracking_confidence=0.5
     )
 
-    # Initialize all counters
-    avgbpm = 0
-    avgcount = 0
-    count = 0
-    eyecount = 0
-    lastblinktime = 0
-    lastbpmtime = 0
+
+    avgbpm = avgcount = count = eyecount = 0
+    lastblinktime = lastbpmtime = time.time()
     lastgazetime = time.time()
     lastslouch = 0
-    touch_start_time = None
+    hand_violation_logged = False
+    arms_crossed_start = None
+    arms_crossed_printed = False
     mouth_last_check = nose_last_check = eye_last_check = ear_last_check = neck_last_check = None
     mouth_start_time = nose_start_time = eye_start_time = ear_start_time = neck_start_time = None
     mouthtouch_count = nosetouch_count = eyetouch_count = eartouch_count = necktouch_count = 0
-    arms_crossed_start = None
-    arms_crossed_printed = False
 
-    cap = cv2.VideoCapture(0)
-
-    while True:
-        frame = webcamframe(cap)
-        if frame is None:
-            log("Frame not captured!")
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
             break
 
         rgb_frame = bgr2rgb(frame)
@@ -47,32 +49,35 @@ def run_detection_session(log=print):
 
         if results.face_landmarks:
             frame = display_facial_landmarks(frame, results.face_landmarks)
-
         if results.pose_landmarks:
             frame = display_pose(frame, results.pose_landmarks)
-
         if results.left_hand_landmarks:
             frame = display_hand(frame, results.left_hand_landmarks)
         if results.right_hand_landmarks:
             frame = display_hand(frame, results.right_hand_landmarks)
 
-        webcamfeed(frame)
-
-        slouch, lastslouch = slouch_detector(frame, results.pose_landmarks, lastslouch)
-        if slouch:
-            log("Sit Straight!")
-
         if results.pose_landmarks:
+            slouch, lastslouch = slouch_detector(frame, results.pose_landmarks, lastslouch)
+            if slouch:
+                log("Sit Straight!")
+
             arms_crossed = arms_crossed_detector(results.pose_landmarks)
             if arms_crossed:
                 if arms_crossed_start is None:
                     arms_crossed_start = time.time()
                 elif not arms_crossed_printed and time.time() - arms_crossed_start >= 5:
-                    log("Arms have been crossed for 5 seconds!")
+                    log("Arms crossed for 5+ seconds!")
                     arms_crossed_printed = True
             else:
                 arms_crossed_start = None
                 arms_crossed_printed = False
+
+            for hand in [results.left_hand_landmarks, results.right_hand_landmarks]:
+                if hand and check_hand_in_restricted_zone(frame, results.pose_landmarks, hand, log):
+                    if not hand_violation_logged:
+                        log("⚠️ Hand entered restricted zone!")
+                        hand_violation_logged = True
+
 
         if results.face_landmarks:
             face_landmarks = results.face_landmarks
@@ -82,66 +87,66 @@ def run_detection_session(log=print):
             blinkcheck, lastblinktime = blinking(righteyedist, lefteyedist, lastblinktime)
             gazeoff, lastgazetime = gaze_detector(frame, face_landmarks, lastgazetime)
 
-            hand_landmarks = results.left_hand_landmarks or results.right_hand_landmarks
-
+            if blinkcheck:
+                count += 1
             if gazeoff:
                 log("Don't look away!")
                 eyecount += 1
-            if blinkcheck:
-                count += 1
 
-            if hand_landmarks is not None:
-                touchedmouth, mouth_last_check, mouth_start_time, mouthtouch_count = update_touch_state(
-                    frame, face_landmarks, hand_landmarks,
-                    mouth_last_check, mouth_start_time, mouthtouch_count,
-                    contact_func=hand_mouth_contact
+            hand_landmarks = results.left_hand_landmarks or results.right_hand_landmarks
+            if hand_landmarks:
+                
+                touched, mouth_last_check, mouth_start_time, mouthtouch_count = update_touch_state(
+                    frame, face_landmarks, hand_landmarks, mouth_last_check, mouth_start_time, mouthtouch_count, contact_func=hand_mouth_contact
                 )
-                touchednose, nose_last_check, nose_start_time, nosetouch_count = update_touch_state(
-                    frame, face_landmarks, hand_landmarks,
-                    nose_last_check, nose_start_time, nosetouch_count,
-                    contact_func=hand_nose_contact
-                )
-                touchedeye, eye_last_check, eye_start_time, eyetouch_count = update_touch_state(
-                    frame, face_landmarks, hand_landmarks,
-                    eye_last_check, eye_start_time, eyetouch_count,
-                    contact_func=hand_eye_contact
-                )
-                touchedear, ear_last_check, ear_start_time, eartouch_count = update_touch_state(
-                    frame, face_landmarks, hand_landmarks,
-                    ear_last_check, ear_start_time, eartouch_count,
-                    contact_func=hand_ear_contact
-                )
-                touchedneck, neck_last_check, neck_start_time, necktouch_count = update_touch_state(
-                    frame, face_landmarks, hand_landmarks,
-                    neck_last_check, neck_start_time, necktouch_count,
-                    contact_func=hand_neck_contact
-                )
-
-                if touchedear:
-                    log(f"Hand touched ear! Count: {eartouch_count}")
-                if touchedneck:
-                    log(f"Hand touched neck! Count: {necktouch_count}")
-                if touchedmouth:
+                if touched:
                     log(f"Hand touched mouth! Count: {mouthtouch_count}")
-                if touchednose:
+
+                # Nose
+                touched, nose_last_check, nose_start_time, nosetouch_count = update_touch_state(
+                    frame, face_landmarks, hand_landmarks, nose_last_check, nose_start_time, nosetouch_count, contact_func=hand_nose_contact
+                )
+                if touched:
                     log(f"Hand touched nose! Count: {nosetouch_count}")
-                if touchedeye:
+
+                # Eye
+                touched, eye_last_check, eye_start_time, eyetouch_count = update_touch_state(
+                    frame, face_landmarks, hand_landmarks, eye_last_check, eye_start_time, eyetouch_count, contact_func=hand_eye_contact
+                )
+                if touched:
                     log(f"Hand touched eye! Count: {eyetouch_count}")
 
-        currenttime = time.time()
-        if currenttime - lastbpmtime >= 10:
+                # Ear
+                touched, ear_last_check, ear_start_time, eartouch_count = update_touch_state(
+                    frame, face_landmarks, hand_landmarks, ear_last_check, ear_start_time, eartouch_count, contact_func=hand_ear_contact
+                )
+                if touched:
+                    log(f"Hand touched ear! Count: {eartouch_count}")
+
+                # Neck
+                touched, neck_last_check, neck_start_time, necktouch_count = update_touch_state(
+                    frame, face_landmarks, hand_landmarks, neck_last_check, neck_start_time, necktouch_count, contact_func=hand_neck_contact
+                )
+                if touched:
+                    log(f"Hand touched neck! Count: {necktouch_count}")
+
+
+        if time.time() - lastbpmtime >= 10:
             bpm, lastbpmtime = blinkperminute(count, lastbpmtime)
             avgcount += 1
             avgbpm = ((avgbpm * (avgcount - 1)) + bpm) / avgcount
             log(f"BPM: {bpm}")
             count = 0
 
+        cv2.imshow("Live Feedback", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
+    holistic.close()
 
+    log("[INFO] Final Report:")
     report = {
         "eye_contact_breaks": eyecount,
         "total_blinks": count,
@@ -154,6 +159,4 @@ def run_detection_session(log=print):
         "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
         "final_bpm": round(avgbpm, 2)
     }
-
-    log("[INFO] Final Report:")
-    log(report)
+    log(str(report))

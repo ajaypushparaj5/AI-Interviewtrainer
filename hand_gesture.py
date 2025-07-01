@@ -143,7 +143,7 @@ def hand_neck_contact(rgb_frame, face_landmarks, hand_landmarks):
     neck_left = cx - 60
     neck_right = cx + 60
 
- 
+    
     fingertip_indices = [4, 8, 12, 16, 20]
     for idx in fingertip_indices:
         x = int(hand_landmarks.landmark[idx].x * w)
