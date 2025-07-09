@@ -1,8 +1,11 @@
 venv/
 __pycache__/
 .vscode/
-feedback_gui.py
 models
 .gitignore
 test.txt
 models/model.py
+*.avi
+*.spec
+*.png
+*.docx

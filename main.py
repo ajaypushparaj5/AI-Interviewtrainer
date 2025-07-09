@@ -5,16 +5,17 @@ from hand_gesture import *
 
 def run_detection_session(video_path, log=print):
     cap = cv2.VideoCapture(video_path)
-    run_analysis(cap, log)
+    return run_analysis(cap, log)
 
 def run_live_session(log=print):
     cap = cv2.VideoCapture(0)
-    run_analysis(cap, log)
+    return run_analysis(cap, log)
 
 def run_analysis(cap, log=print):
     import cv2
     import mediapipe as mp
     import time
+    start_time = time.time()
 
 
     mp_holistic = mp.solutions.holistic
@@ -38,10 +39,12 @@ def run_analysis(cap, log=print):
     mouth_last_check = nose_last_check = eye_last_check = ear_last_check = neck_last_check = None
     mouth_start_time = nose_start_time = eye_start_time = ear_start_time = neck_start_time = None
     mouthtouch_count = nosetouch_count = eyetouch_count = eartouch_count = necktouch_count = 0
-
+    
+    cv2.namedWindow("Live Feedback", cv2.WINDOW_NORMAL)
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
+            log("[ERROR] Couldn't read frame from video.")
             break
 
         rgb_frame = bgr2rgb(frame)
@@ -145,6 +148,8 @@ def run_analysis(cap, log=print):
     cap.release()
     cv2.destroyAllWindows()
     holistic.close()
+    end_time = time.time()
+    session_duration = round(end_time - start_time, 2)  
 
     log("[INFO] Final Report:")
     report = {
@@ -157,6 +162,8 @@ def run_analysis(cap, log=print):
         "neck_touch_count": necktouch_count,
         "arms_crossed_duration": round(time.time() - arms_crossed_start, 2) if arms_crossed_start else 0,
         "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
-        "final_bpm": round(avgbpm, 2)
+        "final_bpm": round(avgbpm, 2),
+        "duration_sec": session_duration
     }
     log(str(report))
+    return report
