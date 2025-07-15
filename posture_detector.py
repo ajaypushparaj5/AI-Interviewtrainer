@@ -38,7 +38,7 @@ def display_pose(rgb_frame, results):
     rs = lm[12]
     lh = lm[23]
     rh = lm[24]
-
+    
     x1 = int((min(ls.x, rs.x) + 0.05) * w)
     x2 = int((max(ls.x, rs.x) - 0.05) * w)
     y1 = int(min(ls.y, rs.y) * h) + 10
@@ -74,10 +74,10 @@ def slouch_detector(rgb_frame, results, lastslouch):
     return False, lastslouch
 
 
-def arms_crossed_detector(results, threshold=0.15):
+def arms_crossed_detector(results, last_arms_crossed_time, threshold=0.15):
     if not results:
-        return False
-
+        return False, last_arms_crossed_time
+    current_time = time.time()
     landmarks = results.landmark
 
     left_wrist = landmarks[15]
@@ -89,13 +89,18 @@ def arms_crossed_detector(results, threshold=0.15):
     left_wrist_near_right_shoulder = abs(left_wrist.x - right_shoulder.x) < threshold
     right_wrist_near_left_shoulder = abs(right_wrist.x - left_shoulder.x) < threshold
 
-    return left_wrist_near_right_shoulder and right_wrist_near_left_shoulder
+    if left_wrist_near_right_shoulder and right_wrist_near_left_shoulder:
+        if current_time - last_arms_crossed_time > 3:
+            last_arms_crossed_time = current_time
+            return True, last_arms_crossed_time
+    return False, last_arms_crossed_time
+    
 
 
 
 def check_hand_in_restricted_zone(frame, pose_landmarks, hand_landmarks, log):
     if pose_landmarks is None or hand_landmarks is None:
-        return False
+        return False        
 
     h, w, _ = frame.shape
     lm = pose_landmarks.landmark
