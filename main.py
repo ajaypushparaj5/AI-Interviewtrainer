@@ -345,22 +345,6 @@ def run_analysis(cap, log=print, true_duration=None):
     video_duration = round(true_duration, 2) if true_duration else session_duration
 
     log("[INFO] Final Report:")
-    # report = {
-    #     "eye_contact_breaks": eyecount,
-    #     "total_blinks": count,
-    #     "mouth_touch_count": mouthtouch_count,
-    #     "nose_touch_count": nosetouch_count,
-    #     "eye_touch_count": eyetouch_count,
-    #     "ear_touch_count": eartouch_count,
-    #     "neck_touch_count": necktouch_count,
-    #     "arms_crossed_for_3_sec_count": arms_crossed_count,
-    #     "slouching": slouchcount,
-    #     "leg_crossed_count": legcrossedcount,
-    #     "leg_bouncing_count": legbouncingcount,
-    #     "hand_on_hip_count": hand_on_hip_count,
-    #     "final_bpm": round(avgbpm, 2),
-    #     "duration_sec": video_duration
-    # }
     report = {
         "eye_contact_breaks": eyecount,
         "total_blinks": count,
@@ -369,10 +353,26 @@ def run_analysis(cap, log=print, true_duration=None):
         "eye_touch_count": eyetouch_count,
         "ear_touch_count": eartouch_count,
         "neck_touch_count": necktouch_count,
-        "arms_crossed_duration": round(time.time() - arms_crossed_start, 2) if arms_crossed_start else 0,
-        "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
+        # "arms_crossed_for_3_sec_count": arms_crossed_count,
+        "slouching": slouchcount,
+        "leg_crossed_count": legcrossedcount,
+        "leg_bouncing_count": legbouncingcount,
+        "hand_on_hip_count": hand_on_hip_count,
         "final_bpm": round(avgbpm, 2),
-        "duration_sec": session_duration
+        "duration_sec": video_duration
     }
+    # report = {
+    #     "eye_contact_breaks": eyecount,
+    #     "total_blinks": count,
+    #     "mouth_touch_count": mouthtouch_count,
+    #     "nose_touch_count": nosetouch_count,
+    #     "eye_touch_count": eyetouch_count,
+    #     "ear_touch_count": eartouch_count,
+    #     "neck_touch_count": necktouch_count,
+    #     "arms_crossed_duration": round(time.time() - arms_crossed_start, 2) if arms_crossed_start else 0,
+    #     "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
+    #     "final_bpm": round(avgbpm, 2),
+    #     "duration_sec": session_duration
+    # }
     log(str(report))
     return report

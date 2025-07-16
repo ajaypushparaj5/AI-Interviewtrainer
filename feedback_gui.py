@@ -430,9 +430,8 @@ class FeedbackApp:
             }
 
         grade = rank_user_behavior(self.stats, emotion_stats)
-        self.logs.append(f"[RESULT] Score: {grade['rubric_scores']}, Rank: {grade['rank']}")
-        for c in grade['comments']:
-            self.logs.append(f"[FEEDBACK] {c}")
+        self.logs.append(f"[SCORE] {grade['rubric_scores']}")
+        self.logs.append(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
         self.stats['grade'] = grade
         self.show_log_report()
 
