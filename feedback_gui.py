@@ -239,7 +239,7 @@
 #     root.mainloop()
 
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog,IntVar,Radiobutton,Button,Label
 from main import run_detection_session, run_live_session
 import time
 import cv2
@@ -253,7 +253,7 @@ class FeedbackApp:
         self.root.title("AI Interview Trainer")
         self.root.geometry("800x600")
         self.root.resizable(False, False)
-
+        self.strictness = "default"
         self.logs = []
         self.show_history = False
         self.video_path = None
@@ -348,6 +348,7 @@ class FeedbackApp:
             self.write_log(f"[ERROR] {str(e)}")
         self.write_log("[INFO] Analysis complete.")
         self.show_loading()
+        self.ask_strictness()
         self.root.after(100, self.generate_and_show_rank)
 
     def start_live_session(self):
@@ -364,6 +365,7 @@ class FeedbackApp:
             self.write_log(f"[ERROR] {str(e)}")
         self.write_log("[INFO] Live session ended.")
         self.show_loading()
+        self.ask_strictness()
         self.root.after(100, self.generate_and_show_rank)
 
     def record_video(self):
@@ -429,7 +431,7 @@ class FeedbackApp:
                 'surprise': 0
             }
 
-        grade = rank_user_behavior(self.stats, emotion_stats)
+        grade = rank_user_behavior(self.stats, emotion_stats,self.strictness)
         self.logs.append(f"[SCORE] {grade['rubric_scores']}")
         self.logs.append(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
         self.stats['grade'] = grade
@@ -461,6 +463,40 @@ class FeedbackApp:
         self.show_report()
         self.report_text.delete("1.0", "end")
         self.report_text.insert("end", "\n".join(self.logs))
+        
+    def ask_strictness(self):
+        popup = tk.Toplevel(self.root)
+        popup.title("Select Analysis Strictness")
+        popup.geometry("300x500")
+        popup.transient(self.root)
+        popup.grab_set()
+        
+        label = tk.Label(popup, text="Choose strictness level:", font=("Helvetica", 14))
+        label.pack(pady=20)
+        choice_var = IntVar(value=1)
+        options = [("longer videos (More than 10 min)",2), ("shorter videos (Less than 10 min)",3), ("very short videos (Less than 5 min)",4),("default",1)]
+        
+    
+        for label, value in options:
+            rb = tk.Radiobutton(popup, text=label, variable=choice_var, value=value, font=("Helvetica", 12))
+            rb.pack(anchor="w", padx=20)
+            
+        def submit():
+            self.strictness = choice_var.get()
+            popup.destroy()
+            
+        submit_btn = tk.Button(popup, text="Submit", command=submit, font=("Helvetica", 12))
+        submit_btn.pack(pady=20)
+        
+        self.root.wait_window(popup) 
+        
+        # strict = simpledialog.askstring("Select Analysis Strictness",
+        #                                 "Choose strictness level:\n1.default \n2.longer videos (More than 10 min) \n3.shorter videos (Less than 10 min)\n4.very short videos (Less than 5 min)",
+        #                                 parent=self.root)
+        
+        # if strict not in ["default", "1 minute", "30 minutes", "3 minutes"]:
+        #     messagebox.showerror("Invalid Input", "Please enter a valid strictness level.")
+        #     return None
 
 
 if __name__ == "__main__":

@@ -353,7 +353,7 @@ def run_analysis(cap, log=print, true_duration=None):
         "eye_touch_count": eyetouch_count,
         "ear_touch_count": eartouch_count,
         "neck_touch_count": necktouch_count,
-        # "arms_crossed_for_3_sec_count": arms_crossed_count,
+        "arms_crossed_for_3_sec_count": arms_crossed_count,
         "slouching": slouchcount,
         "leg_crossed_count": legcrossedcount,
         "leg_bouncing_count": legbouncingcount,

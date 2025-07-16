@@ -91,7 +91,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1):
         duration_unit = max(1, report["duration_sec"] / 30)
     elif strictness == 3:
         duration_unit = max(1, report["duration_sec"] / 15)
-    elif strictness == 1:
+    elif strictness == 4:
         duration_unit = max(1, report["duration_sec"] / 60)
     else: 
         duration_unit = 1

@@ -9,3 +9,4 @@ models/model.py
 *.spec
 *.png
 *.docx
+test.py
