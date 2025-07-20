@@ -10,3 +10,4 @@ models/model.py
 *.png
 *.docx
 test.py
+checkgesture.py

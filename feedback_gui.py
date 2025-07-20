@@ -245,7 +245,7 @@ import time
 import cv2
 from ranker import rank_user_behavior 
 from modelutils import analyze_emotions
-
+from feedbackmaker import generate_feedback_doc
 
 class FeedbackApp:
     def __init__(self, root):
@@ -328,6 +328,8 @@ class FeedbackApp:
         self.report_text.pack(pady=10)
 
         tk.Button(self.report_frame, text="Back to Home", command=self.show_home).pack(pady=5)
+        
+        tk.Button(self.report_frame, text="Generate Feedback Document", command=self.generate_feedback_doc).pack(pady=5)
 
     def browse_video(self):
         file_path = filedialog.askopenfilename(filetypes=[("Video Files", "*.mp4 *.avi *.mov")])
@@ -490,14 +492,16 @@ class FeedbackApp:
         
         self.root.wait_window(popup) 
         
-        # strict = simpledialog.askstring("Select Analysis Strictness",
-        #                                 "Choose strictness level:\n1.default \n2.longer videos (More than 10 min) \n3.shorter videos (Less than 10 min)\n4.very short videos (Less than 5 min)",
-        #                                 parent=self.root)
-        
-        # if strict not in ["default", "1 minute", "30 minutes", "3 minutes"]:
-        #     messagebox.showerror("Invalid Input", "Please enter a valid strictness level.")
-        #     return None
-
+    def generate_feedback_doc(self):
+        if not self.stats or 'grade' not in self.stats:
+            print("[ERROR] No stats available to generate feedback document.")
+            return
+        try:
+            report = self.stats.copy()
+            generate_feedback_doc(report, self.strictness)
+            print("[INFO] Feedback document generated successfully.")
+        except Exception as e:
+            print(f"[ERROR] Failed to generate feedback document: {str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
