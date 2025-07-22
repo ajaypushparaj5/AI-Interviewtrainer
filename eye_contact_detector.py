@@ -2,7 +2,7 @@
 import cv2
 import mediapipe as mp
 import time
-
+from collections import deque
 mp_drawing = mp.solutions.drawing_utils
 
 
@@ -87,12 +87,36 @@ def gaze_detector(rgb_frame, face_landmarks, lastgazetime):
 #             return True, lastblinktime
 #     return False, lastblinktime
 
-def blinking(right_eye, left_eye, last_blink_time, threshold=8.0, cooldown=0.6):
+# def blinking(right_eye, left_eye, last_blink_time, threshold=8.0, cooldown=0.6):
+#     avg_eye = (right_eye + left_eye) / 2
+#     current_time = time.time()
+
+#     if avg_eye < threshold and (current_time - last_blink_time) > cooldown:
+#         print("Blink condition met") 
+#         return True, current_time
+    
+#     return False, last_blink_time
+
+
+def blinking(right_eye, left_eye, last_blink_time, eye_history, cooldown=0.6):
     avg_eye = (right_eye + left_eye) / 2
     current_time = time.time()
-
+    
+    eye_history.append(avg_eye)
+    
+    if len(eye_history) < 5:
+        threshold = 8.0  # Your original threshold
+    else:
+        # Calculate adaptive threshold (70% of recent average)
+        recent_avg = sum(eye_history) / len(eye_history)
+        threshold = recent_avg * 0.7
+    
+    # Calculate adaptive threshold (70% of recent average)
+    recent_avg = sum(eye_history) / len(eye_history)
+    threshold = recent_avg * 0.7
+    
     if avg_eye < threshold and (current_time - last_blink_time) > cooldown:
-        print("Blink condition met")  # Optional debug
+        print(f"Blink detected: {avg_eye:.3f} < {threshold:.3f}")
         return True, current_time
     
     return False, last_blink_time
