@@ -11,5 +11,5 @@ models/model.py
 *.docx
 test.py
 checkgesture.py
-feedback
+feedback/
 

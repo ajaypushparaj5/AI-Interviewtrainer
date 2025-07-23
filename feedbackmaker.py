@@ -177,7 +177,7 @@ import os
 from docx import Document
 from docx.shared import Inches
 
-def generate_feedback_doc(report, strictness=1):
+def generate_feedback_doc(report,abnormal_thresholds, strictness=1):
     print("[INFO] Starting feedback document generation...")
 
     try:
@@ -299,18 +299,11 @@ def generate_feedback_doc(report, strictness=1):
         doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
         doc.add_paragraph(f"Hand on Hip: {normalized_report['hand_on_hip_count']:.2f} per minute")
 
-        for key, value in normalized_report.items():
-            try:
-                line = f"{key.replace('_', ' ').title()}: {value:.2f} per minute"
-                doc.add_paragraph(line)
-                print(f"[INFO] Added summary: {line}")
-            except Exception as e:
-                print(f"[WARNING] Could not add summary for {key}: {e}")
 
         # Detailed feedback
         print("[INFO] Adding detailed feedback...")
         for gesture, value in normalized_report.items():
-            if is_abnormal(gesture, value):
+            if is_abnormal(gesture, value,abnormal_thresholds):
                 if gesture in gesture_feedback:
                     feedback = gesture_feedback[gesture]
                     doc.add_heading(gesture.replace("_", " ").title(), level=2)
@@ -338,7 +331,7 @@ def generate_feedback_doc(report, strictness=1):
         print(f"[ERROR] Failed to generate feedback document: {str(e)}")
         
         
-def generate_feedback_folder(report, file_name ,strictness=1):
+def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_thresholds,strictness=1):
     print("[INFO] Starting feedback document generation...")
 
     try:
@@ -459,19 +452,15 @@ def generate_feedback_folder(report, file_name ,strictness=1):
         doc.add_paragraph(f"Legs Crossed: {normalized_report['leg_crossed_count']:.2f} per minute")
         doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
         doc.add_paragraph(f"Hand on Hip: {normalized_report['hand_on_hip_count']:.2f} per minute")
+        doc.add_paragraph(" ")
+        doc.add_paragraph(f"Emotion Stats: {emotion_stats}")
+        doc.add_paragraph(f"[SCORE] {grade['rubric_scores']}")
+        doc.add_paragraph(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
 
-        for key, value in normalized_report.items():
-            try:
-                line = f"{key.replace('_', ' ').title()}: {value:.2f} per minute"
-                doc.add_paragraph(line)
-                print(f"[INFO] Added summary: {line}")
-            except Exception as e:
-                print(f"[WARNING] Could not add summary for {key}: {e}")
 
-        # Detailed feedback
         print("[INFO] Adding detailed feedback...")
         for gesture, value in normalized_report.items():
-            if is_abnormal(gesture, value):
+            if is_abnormal(gesture, value,abnormal_thresholds):
                 if gesture in gesture_feedback:
                     feedback = gesture_feedback[gesture]
                     doc.add_heading(gesture.replace("_", " ").title(), level=2)
@@ -500,22 +489,22 @@ def generate_feedback_folder(report, file_name ,strictness=1):
     except Exception as e:
         print(f"[ERROR] Failed to generate feedback document: {str(e)}")
 
-def is_abnormal(behavior, count):
-    abnormal_threshold = {
-        "eye_contact_breaks": 4,
-        "total_blinks": 20,
-        "mouth_touch_count": 1,
-        "nose_touch_count": 1,
-        "eye_touch_count": 1,
-        "ear_touch_count": 1,
-        "neck_touch_count": 1,
-        "arms_crossed_for_3_sec_count": 2,
-        "slouching": 1,
-        "leg_crossed_count": 2,
-        "leg_bouncing_count": 2,
-        "hand_on_hip_count": 2,
-        "final_bpm": 20
-    }
+def is_abnormal(behavior,count,abnormal_threshold):
+    # abnormal_threshold = {
+    #     "eye_contact_breaks": 4,
+    #     "total_blinks": 20,
+    #     "mouth_touch_count": 1,
+    #     "nose_touch_count": 1,
+    #     "eye_touch_count": 1,
+    #     "ear_touch_count": 1,
+    #     "neck_touch_count": 1,
+    #     "arms_crossed_for_3_sec_count": 2,
+    #     "slouching": 1,
+    #     "leg_crossed_count": 2,
+    #     "leg_bouncing_count": 2,
+    #     "hand_on_hip_count": 2,
+    #     "final_bpm": 20
+    # }
 
     threshold = abnormal_threshold.get(behavior, None)
     if threshold is None:

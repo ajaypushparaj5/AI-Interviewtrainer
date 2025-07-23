@@ -340,6 +340,12 @@ class FeedbackApp:
 
         Button(popup, text="Save Changes", command=lambda: self.save_thresholds(popup)).pack(pady=20)
         
+    def save_thresholds(self, popup):
+        for key, var in self.threshold_vars.items():
+            self.abnormal_thresholds[key] = var.get()
+        popup.destroy()
+        print(f"[INFO] Updated thresholds: {self.abnormal_thresholds}")
+        
     
     def init_live(self):
         self.latest_log = tk.Label(self.live_frame, text="Waiting for log...", font=("Courier", 12), bg="#f4f4f4", width=80, height=4, anchor="nw", justify="left")
@@ -472,7 +478,7 @@ class FeedbackApp:
                 'surprise': 0
             }
 
-        grade = rank_user_behavior(self.stats, emotion_stats,self.strictness)
+        grade = rank_user_behavior(self.stats, emotion_stats,self.strictness, self.abnormal_thresholds)
         self.logs.append(f"[SCORE] {grade['rubric_scores']}")
         self.logs.append(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
         self.stats['grade'] = grade
@@ -523,12 +529,12 @@ class FeedbackApp:
                     print("[INFO] Analyzing facial expressions...")
                     emotion_stats = analyze_emotions(video_path)
                     print(f"[INFO] Emotion stats: {emotion_stats}")
-                    grade = rank_user_behavior(stats, emotion_stats, self.strictness)
+                    grade = rank_user_behavior(stats, emotion_stats, self.strictness, self.abnormal_thresholds)
                     stats['grade'] = grade
                     out_name = os.path.splitext(file)[0] + ".docx"
                     custom_filename=os.path.join(feedback_dir, out_name)
                     print(f"[INFO] Saving feedback to {custom_filename}")
-                    generate_feedback_folder(stats,custom_filename,self.abnormal_thresholds,self.strictness)
+                    generate_feedback_folder(stats,emotion_stats,grade,custom_filename,self.abnormal_thresholds,self.strictness)
                     print(f"[SUCCESS] Saved: {out_name}")
                 except Exception as e:
                     print(f"[ERROR] Failed on {file}: {str(e)}")
