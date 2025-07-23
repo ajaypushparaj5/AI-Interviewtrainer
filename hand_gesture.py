@@ -133,11 +133,9 @@ def hand_neck_contact(rgb_frame, face_landmarks, hand_landmarks):
 
     h, w, _ = rgb_frame.shape
 
-    # Chin landmark
     chin = face_landmarks.landmark[152]
     cx, cy = int(chin.x * w), int(chin.y * h)
 
-    # Define neck box below chin
     neck_top = cy + 10
     neck_bottom = cy + 90
     neck_left = cx - 60

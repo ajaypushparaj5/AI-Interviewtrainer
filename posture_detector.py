@@ -4,23 +4,6 @@ import mediapipe as mp
 import time
 import math
 
-# def display_pose(rgb_frame, results):
-#     if results:
-#         landmarks = results.landmark
-#         h, w, _ = rgb_frame.shape
-
-#         left_shoulder = landmarks[11]  
-#         right_shoulder = landmarks[12]  
-
-#         lx, ly = int(left_shoulder.x * w), int(left_shoulder.y * h)
-#         rx, ry = int(right_shoulder.x * w), int(right_shoulder.y * h)
-
-#         cv2.circle(rgb_frame, (lx, ly), 8, (255, 0, 0), -1)
-#         cv2.circle(rgb_frame, (rx, ry), 8, (255, 0, 0), -1)
-#         cv2.line(rgb_frame, (lx, ly), (rx, ry), (0, 255, 0), 2)
-
-#     return rgb_frame
-
 def coords(lm,shape):
     return mp.solutions.drawing_utils._normalized_to_pixel_coordinates(lm.x, lm.y, shape[1], shape[0])
 
@@ -81,54 +64,6 @@ def slouch_detector(rgb_frame, results, lastslouch):
 
     return False, lastslouch
 
-
-# def arms_crossed_detector(results, last_arms_crossed_time, threshold=0.15):
-#     if not results:
-#         return False, last_arms_crossed_time
-#     current_time = time.time()
-#     landmarks = results.landmark
-
-#     left_wrist = landmarks[15]
-#     right_wrist = landmarks[16]
-#     left_shoulder = landmarks[11]
-#     right_shoulder = landmarks[12]
-
-#     # Condition: wrists are near opposite shoulders (in x-direction)
-#     left_wrist_near_right_shoulder = abs(left_wrist.x - right_shoulder.x) < threshold
-#     right_wrist_near_left_shoulder = abs(right_wrist.x - left_shoulder.x) < threshold
-
-#     if left_wrist_near_right_shoulder and right_wrist_near_left_shoulder:
-#         if current_time - last_arms_crossed_time > 3:
-#             last_arms_crossed_time = current_time
-#             return True, last_arms_crossed_time
-#     return False, last_arms_crossed_time
-    
-# def arms_crossed_detector(results, lastcrossed,threshold=0.1):
-#     if not results or not hasattr(results, 'landmark'):
-#         return False, lastcrossed
-#     current_time = time.time()
-#     lm= results.landmark
-    
-#     left_elbow = lm[13]
-#     right_elbow = lm[14]
-#     left_shoulder = lm[11]
-#     right_shoulder = lm[12]
-    
-#     mid_x = (left_shoulder.x + right_shoulder.x) / 2
-    
-#     elbows_near_mid = abs (left_elbow.x - mid_x) < threshold and abs(right_elbow.x - mid_x) < threshold
-    
-#     elbows_close = abs(left_elbow.y - right_elbow.y) < threshold*1.5
-    
-#     elbow_y_check = abs(left_elbow.y - right_elbow.y) < threshold
-    
-#     if elbows_close and elbow_y_check:
-#         if current_time - lastcrossed > 1:
-#             lastcrossed = current_time
-#             return True, lastcrossed 
-#     return False, lastcrossed
-
-
     
 def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
 
@@ -138,7 +73,6 @@ def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
     current_time = time.time()
     lm = results.landmark
     
-    # Get forearm landmarks
     left_elbow = lm[13]
     right_elbow = lm[14]
     left_wrist = lm[15]
