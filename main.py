@@ -41,6 +41,14 @@ def run_analysis(cap, log=print, true_duration=None):
     legcrossedcount=0
     legbouncingcount=0
     hand_on_hip_count = 0
+    lastgesturebox_time = time.time()
+    gesturebox_count = 0
+    lasthandsclenched = time.time()
+    handsclenched_count = 0
+    lasthandstiedback = time.time()
+    handstiedback_count = 0
+    lasthandinpocket = time.time()
+    handinpocket_count = 0
     lastbounce_time = time.time()
     lasthandonhip = time.time()
     arms_crossed_count = 0
@@ -103,16 +111,30 @@ def run_analysis(cap, log=print, true_duration=None):
             arms_crossed,lastarms_crossed_time = arms_crossed_detector(results.pose_landmarks, lastarms_crossed_time)
             if arms_crossed:
                 arms_crossed_count+= 1
-                log("Arms crossed for 3+ seconds!")
-
-        
+                log("Arms crossed!")
 
             
-            for hand in [results.left_hand_landmarks, results.right_hand_landmarks]:
-                if hand and check_hand_in_restricted_zone(frame, results.pose_landmarks, hand, log):
-                    if not hand_violation_logged:
-                        log("⚠️ Hand entered restricted zone!")
-                        hand_violation_logged = True
+            gesturebox, lastgesturebox_time=hands_outside_gesture_box(results.pose_landmarks, lastgesturebox_time)
+            if gesturebox:
+                gesturebox_count += 1
+                log("Hands outside gesture box!")
+                
+            handsclenched, lasthandsclenched = hands_clenched_detector(results.pose_landmarks, lasthandsclenched)
+            if handsclenched:
+                handsclenched_count += 1
+                log("Hands clenched!")
+                
+            handstiedback, lasthandstiedback = hands_behind_back_detector(results.pose_landmarks, lasthandstiedback)
+            if handstiedback:
+                handstiedback_count += 1
+                log("Hands tied back!")
+                
+            handinpocket, lasthandinpocket = hands_in_pockets_detector(results.pose_landmarks, lasthandinpocket)
+            if handinpocket:
+                handinpocket_count += 1
+                log("Hands in pockets!")
+                
+            
                         
 
         

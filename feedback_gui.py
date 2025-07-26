@@ -1,5 +1,3 @@
-
-
 import tkinter as tk
 from tkinter import filedialog,IntVar,Radiobutton,Button,Label
 from main import run_detection_session, run_live_session
@@ -34,6 +32,10 @@ class FeedbackApp:
             "leg_crossed_count": 2,
             "leg_bouncing_count": 2,
             "hand_on_hip_count": 2,
+            'hands_outside_gesture_box_count': 5,
+            'hands_clenched_count': 3,
+            'hands_behind_back_count': 3,
+            'hands_in_pockets_count': 5,
             "final_bpm": 20,
         }
 
