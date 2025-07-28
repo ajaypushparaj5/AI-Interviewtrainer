@@ -278,51 +278,76 @@ def hands_outside_gesture_box(results, last_outside,
     
     return False, last_outside
 
-def hands_clenched_detector(results, last_clenched, distance_threshold=0.05):
-    """
-    Detects when hands are clenched together (clasped/interlocked)
-    """
-    if not results or not hasattr(results, 'landmark'):
+# def hands_clenched_detector(results, last_clenched, distance_threshold=0.05):
+#     """
+#     Detects when hands are clenched together (clasped/interlocked)
+#     """
+#     if not results or not hasattr(results, 'landmark'):
+#         return False, last_clenched
+    
+#     current_time = time.time()
+#     lm = results.landmark
+    
+#     left_wrist = lm[15]
+#     right_wrist = lm[16]
+#     left_thumb = lm[21]  # Left thumb tip
+#     right_thumb = lm[22] # Right thumb tip
+    
+#     # Calculate distance between wrists
+#     wrist_distance = math.sqrt((left_wrist.x - right_wrist.x)**2 + 
+#                               (left_wrist.y - right_wrist.y)**2)
+    
+#     # Calculate distance between thumbs (closer when hands are clasped)
+#     thumb_distance = math.sqrt((left_thumb.x - right_thumb.x)**2 + 
+#                               (left_thumb.y - right_thumb.y)**2)
+    
+#     # Hands are in front of body (between shoulders horizontally)
+#     left_shoulder = lm[11]
+#     right_shoulder = lm[12]
+#     hands_centered = (min(left_shoulder.x, right_shoulder.x) < 
+#                      (left_wrist.x + right_wrist.x) / 2 < 
+#                      max(left_shoulder.x, right_shoulder.x))
+    
+#     # Check if hands are close together and centered
+#     hands_close = wrist_distance < distance_threshold and thumb_distance < distance_threshold * 1.5
+    
+#     if hands_close and hands_centered:
+#         if current_time - last_clenched > 1:
+#             last_clenched = current_time
+#             return True, last_clenched
+    
+#     return False, last_clenched
+
+import time
+import math
+
+
+def hands_clenched_detector(results, last_clenched, distance_threshold=0.1):
+
+    if not results:
         return False, last_clenched
-    
-    current_time = time.time()
+
     lm = results.landmark
-    
+
     left_wrist = lm[15]
     right_wrist = lm[16]
-    left_thumb = lm[21]  # Left thumb tip
-    right_thumb = lm[22] # Right thumb tip
-    
-    # Calculate distance between wrists
-    wrist_distance = math.sqrt((left_wrist.x - right_wrist.x)**2 + 
-                              (left_wrist.y - right_wrist.y)**2)
-    
-    # Calculate distance between thumbs (closer when hands are clasped)
-    thumb_distance = math.sqrt((left_thumb.x - right_thumb.x)**2 + 
-                              (left_thumb.y - right_thumb.y)**2)
-    
-    # Hands are in front of body (between shoulders horizontally)
-    left_shoulder = lm[11]
-    right_shoulder = lm[12]
-    hands_centered = (min(left_shoulder.x, right_shoulder.x) < 
-                     (left_wrist.x + right_wrist.x) / 2 < 
-                     max(left_shoulder.x, right_shoulder.x))
-    
-    # Check if hands are close together and centered
-    hands_close = wrist_distance < distance_threshold and thumb_distance < distance_threshold * 1.5
-    
-    if hands_close and hands_centered:
+
+    wrist_distance = math.sqrt(
+        (left_wrist.x - right_wrist.x) ** 2 +
+        (left_wrist.y - right_wrist.y) ** 2
+    )
+
+    current_time = time.time()
+    if wrist_distance < distance_threshold:
         if current_time - last_clenched > 1:
             last_clenched = current_time
             return True, last_clenched
-    
+
     return False, last_clenched
 
 
 def hands_behind_back_detector(results, last_behind, visibility_threshold=0.3):
-    """
-    Detects when hands are tied/clasped behind back (from front camera view)
-    """
+
     if not results or not hasattr(results, 'landmark'):
         return False, last_behind
     
@@ -358,9 +383,7 @@ def hands_behind_back_detector(results, last_behind, visibility_threshold=0.3):
 
 
 def hands_in_pockets_detector(results, last_pockets, y_threshold_ratio=0.7, visibility_threshold=0.4):
-    """
-    Detects when hands are in pockets
-    """
+
     if not results or not hasattr(results, 'landmark'):
         return False, last_pockets
     

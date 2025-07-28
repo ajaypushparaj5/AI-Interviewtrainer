@@ -117,22 +117,22 @@ def run_analysis(cap, log=print, true_duration=None):
             gesturebox, lastgesturebox_time=hands_outside_gesture_box(results.pose_landmarks, lastgesturebox_time)
             if gesturebox:
                 gesturebox_count += 1
-                log("Hands outside gesture box!")
+                print("Hands outside gesture box!")
                 
             handsclenched, lasthandsclenched = hands_clenched_detector(results.pose_landmarks, lasthandsclenched)
             if handsclenched:
                 handsclenched_count += 1
-                log("Hands clenched!")
+                print("Hands clenched!")
                 
             handstiedback, lasthandstiedback = hands_behind_back_detector(results.pose_landmarks, lasthandstiedback)
             if handstiedback:
                 handstiedback_count += 1
-                log("Hands tied back!")
+                print("Hands tied back!")
                 
             handinpocket, lasthandinpocket = hands_in_pockets_detector(results.pose_landmarks, lasthandinpocket)
             if handinpocket:
                 handinpocket_count += 1
-                log("Hands in pockets!")
+                print("Hands in pockets!")
                 
             
                         
@@ -228,6 +228,10 @@ def run_analysis(cap, log=print, true_duration=None):
         'leg_crossed_count': round((legcrossedcount)*video_duration/session_duration) if session_duration > 0 else 0,
         'leg_bouncing_count': round((legbouncingcount)*video_duration/session_duration) if session_duration > 0 else 0,
         'hand_on_hip_count': round((hand_on_hip_count)*video_duration/session_duration) if session_duration > 0 else 0,
+        'hands_outside_gesture_box_count': round((gesturebox_count)*video_duration/session_duration) if session_duration > 0 else 0,
+        'hands_clenched_count': round((handsclenched_count)*video_duration/session_duration) if session_duration > 0 else 0,
+        'hands_behind_back_count': round((handstiedback_count)*video_duration/session_duration) if session_duration > 0 else 0,
+        'hands_in_pockets_count': round((handinpocket_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'final_bpm': round(avgbpm, 2),
         'duration_sec': video_duration,
         'session_duration': session_duration
