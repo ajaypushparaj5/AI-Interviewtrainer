@@ -40,7 +40,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
     ear_touches = norm(report["ear_touch_count"])
     neck_touches = norm(report["neck_touch_count"])
     leg_bouncing = norm(report["leg_bouncing_count"])
-    hands_outside_gesture_box = norm(report.get("hands_outside_gesture_box_count", 0))
+    hands_outside_gesture_box = norm(report["hands_outside_gesture_box_count"])
 
     
     
@@ -59,9 +59,9 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
 
     #Gestures
     fitget_metric = mouth_touches + nose_touches + eye_touches + ear_touches + neck_touches
-    gesture_score=   (5 if hands_outside_gesture_box >=15 else
-                    3 if hands_outside_gesture_box >= 10 and hands_outside_gesture_box < 15 else
-                    1 if hands_outside_gesture_box < 10 or fitget_metric > 10  else 0)
+    gesture_score=   (1 if hands_outside_gesture_box >=25 or fitget_metric > 10  else
+                    3 if hands_outside_gesture_box >= 10 and hands_outside_gesture_box < 25 else
+                    5 if hands_outside_gesture_box < 10 else 0)
     
     # Facial Expression
     
