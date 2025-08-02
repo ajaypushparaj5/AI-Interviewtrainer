@@ -3,8 +3,9 @@ import os
 from docx import Document
 from docx.shared import Inches
 
-def generate_feedback_doc(report,abnormal_thresholds, strictness=1):
+def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
     print("[INFO] Starting feedback document generation...")
+    print("[Info] This is the recieved grade:",grade)
 
     try:
         # Normalize based on strictness level
@@ -193,6 +194,155 @@ def generate_feedback_doc(report,abnormal_thresholds, strictness=1):
 
         doc = Document()
         doc.add_heading('Personalized Feedback', level=1)
+        
+        doc.add_heading("Body Language Score Table", level=2)
+        table = doc.add_table(rows=1, cols=4)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Body language cues'
+        hdr_cells[1].text = 'Observation'
+        hdr_cells[2].text = 'Score'
+        hdr_cells[3].text = 'Explanation'
+        rubricscores = grade["rubric_scores"]
+        print(rubricscores)
+
+        print("[INFO]:creating dictionaries")
+        # You can customize these based on your detection/logic
+        stance = {
+            '1' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Rocking/swaying more than 5 times",
+                "score": rubricscores['stance'],
+                "explanation": "Feet not firmly planted, a lot of rocking, swaying, or walking that detracted from message. Throughout the session, observer was focused on stance.."
+            },
+            '3' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Rocking/swaying 3–5 times",
+                "score": rubricscores['stance'],
+                "explanation": "Occurrences of a neutral stance. Feet mostly planted, some movement, mostly faced audience, and occasional rocking or swaying. Throughout session, observer focused more on message than stance."
+            },
+            '5' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Good stance",
+                "score": rubricscores['stance'],
+                "explanation": "Adapts a neutral stance. Feet firmly planted, walking did not detract from message, turned to audience, and minimal swaying, throughout session.",
+        }
+        }
+        print(stance)
+        
+        eye_contact = {
+            '1' : {
+                "cue": "EYE CONTACT",
+                "observation": "Limited eye contact",
+                "score": rubricscores['eye_contact'],
+                "explanation":"Consistently did not make eye contact with audience members. Constant glancing at ceiling or the floor a majority of the time. Very limited eye contact."
+            },
+            '3' : {
+                "cue": "EYE CONTACT",
+                "observation": "maintained eye contact 50-70% times",
+                "score": rubricscores['eye_contact'],
+                "explanation": "Inconsistently made eye contact with audience members. Frequent glancing for a duration of 1 to 3 s to ceiling or floor or side throughout session (e.g., like a ping pong ball). Intermittent eye contact with audience members. Overall, appropriate eye contact did not occur a majority of the time."
+            },
+            '5' : {
+                "cue": "EYE CONTACT",
+                "observation": "Maintains eye contact",
+                "score": rubricscores['eye_contact'],
+                "explanation": "Consistently and appropriately made eye contact with audience members. Occasional glancing for a duration of 1 to 3 s to ceiling or floor is appropriate throughout entire session. Overall, appropriate eye contact occurred a majority of the time."
+        }
+        }
+        print(eye_contact)
+        
+        gestures = {
+            '1' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "No major gestures",
+                "score": rubricscores['gestures'],
+                "explanation": "Gestures: Extraneous, distracting, or ineffective arm movements that detracted from message. A majority of gestures or gestures/movements were not used to highlight key words and overshadowed purposeful gestures. Observer focused on these extraneous movements (fidgeting, distracting, or used to think rather than highlight)"
+            },
+            '3' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "Zero to one purposeful Gestures",
+                "score": rubricscores['gestures'],
+                "explanation": "Zero to one purposeful gestures required made between hips and shoulders with firm movement to highlight important word or aspect of message. Instances of “talking” with hands or “weak” gesture attempts (not in hip/shoulder zone)."
+            },
+            '5' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "Performed more than one gesture",
+                "score": rubricscores['gestures'],
+                "explanation": "At least two purposeful gestures made between hips and shoulders with firm movement to highlight important word or aspect of message. Gestures were purposeful and may have been accompanied by minimal “talking” with hands."
+        }
+        }
+        print(gestures)
+        facial_expression = {
+            '1' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Neutral expression",
+                "score": rubricscores['facial_expression'],
+                "explanation": " No facial expressions observed throughout session (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). Smile at end of exchange does not count."
+            },
+            '3' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Some expressions were observed",
+                "score": rubricscores['facial_expression'],
+                "explanation": "Occurrences of facial expressions were intermittent over the session (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). Possible instances of nonpurposeful distracting facial movements that were repetitive. Smile at end of exchange does not count."
+            },
+            '5' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Facial expressions were Consistent",
+                "score": rubricscores['facial_expression'],
+                "explanation": "Four or more instances of facial expressions across two or more responses (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). No distracting movements. Smile at end of exchange does not count."
+            }
+        } 
+        print(facial_expression)
+        
+        print("[INFO]:Dictionaries created")
+        
+        stance_score=str(rubricscores['stance'])
+        print(stance_score)
+        eyecontact_score=str(rubricscores['eye_contact'])
+        gesture_score=str(rubricscores['gestures'])
+        facial_score=str(rubricscores['facial_expression'])
+        print(facial_score)
+        
+        print("[INFO]:Made dict acc to score")
+
+        stancee=stance[stance_score]
+        eyee=eye_contact[eyecontact_score]
+        gesturee=gestures[gesture_score]
+        faciall=facial_expression[facial_score] 
+
+        print("[INFO]:Collected details for table")
+
+        
+        row_cells = table.add_row().cells
+        row_cells[0].text = stancee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = stancee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(stancee["score"])
+        row_cells[3].text = stancee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = eyee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = eyee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(eyee["score"])
+        row_cells[3].text = eyee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = gesturee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = gesturee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(gesturee["score"])
+        row_cells[3].text = gesturee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = faciall["cue"].replace('\xa0', ' ')
+        row_cells[1].text = faciall["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(faciall["score"])
+        row_cells[3].text = faciall["explanation"].replace('\xa0', ' ')
+
+        
+
+        print("[INFO]:Table added")
+        
+        
         doc.add_paragraph(f"Report:)")
         doc.add_paragraph(f"Duration: {report['duration_sec']} seconds")
         doc.add_paragraph(f"Final BPM: {report.get('final_bpm', 'N/A')}")
@@ -468,7 +618,157 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
 
         doc = Document()
         doc.add_heading('Personalized Feedback', level=1)
-        doc.add_paragraph(f"Report:)")
+        
+                # Add Body Language Cue Table
+        doc.add_heading("Body Language Score Table", level=2)
+        table = doc.add_table(rows=1, cols=4)
+        table.style = 'Table Grid'
+        hdr_cells = table.rows[0].cells
+        hdr_cells[0].text = 'Body language cues'
+        hdr_cells[1].text = 'Observation'
+        hdr_cells[2].text = 'Score'
+        hdr_cells[3].text = 'Explanation'
+        rubricscores = grade["rubric_scores"]
+        print(rubricscores)
+
+        print("[INFO]:creating dictionaries")
+        # You can customize these based on your detection/logic
+        stance = {
+            '1' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Rocking/swaying more than 5 times",
+                "score": rubricscores['stance'],
+                "explanation": "Feet not firmly planted, a lot of rocking, swaying, or walking that detracted from message. Throughout the session, observer was focused on stance.."
+            },
+            '3' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Rocking/swaying 3–5 times",
+                "score": rubricscores['stance'],
+                "explanation": "Occurrences of a neutral stance. Feet mostly planted, some movement, mostly faced audience, and occasional rocking or swaying. Throughout session, observer focused more on message than stance."
+            },
+            '5' : {
+                "cue": "STANCE(Rocking, Swaying, Movement)",
+                "observation": "Good stance",
+                "score": rubricscores['stance'],
+                "explanation": "Adapts a neutral stance. Feet firmly planted, walking did not detract from message, turned to audience, and minimal swaying, throughout session.",
+        }
+        }
+        print(stance)
+        
+        eye_contact = {
+            '1' : {
+                "cue": "EYE CONTACT",
+                "observation": "Limited eye contact",
+                "score": rubricscores['eye_contact'],
+                "explanation":"Consistently did not make eye contact with audience members. Constant glancing at ceiling or the floor a majority of the time. Very limited eye contact."
+            },
+            '3' : {
+                "cue": "EYE CONTACT",
+                "observation": "maintained eye contact 50-70% times",
+                "score": rubricscores['eye_contact'],
+                "explanation": "Inconsistently made eye contact with audience members. Frequent glancing for a duration of 1 to 3 s to ceiling or floor or side throughout session (e.g., like a ping pong ball). Intermittent eye contact with audience members. Overall, appropriate eye contact did not occur a majority of the time."
+            },
+            '5' : {
+                "cue": "EYE CONTACT",
+                "observation": "Maintains eye contact",
+                "score": rubricscores['eye_contact'],
+                "explanation": "Consistently and appropriately made eye contact with audience members. Occasional glancing for a duration of 1 to 3 s to ceiling or floor is appropriate throughout entire session. Overall, appropriate eye contact occurred a majority of the time."
+        }
+        }
+        print(eye_contact)
+        
+        gestures = {
+            '1' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "No major gestures",
+                "score": rubricscores['gestures'],
+                "explanation": "Gestures: Extraneous, distracting, or ineffective arm movements that detracted from message. A majority of gestures or gestures/movements were not used to highlight key words and overshadowed purposeful gestures. Observer focused on these extraneous movements (fidgeting, distracting, or used to think rather than highlight)"
+            },
+            '3' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "Zero to one purposeful Gestures",
+                "score": rubricscores['gestures'],
+                "explanation": "Zero to one purposeful gestures required made between hips and shoulders with firm movement to highlight important word or aspect of message. Instances of “talking” with hands or “weak” gesture attempts (not in hip/shoulder zone)."
+            },
+            '5' : {
+                "cue": "PURPOSEFUL GESTURES",
+                "observation": "Performed more than one gesture",
+                "score": rubricscores['gestures'],
+                "explanation": "At least two purposeful gestures made between hips and shoulders with firm movement to highlight important word or aspect of message. Gestures were purposeful and may have been accompanied by minimal “talking” with hands."
+        }
+        }
+        print(gestures)
+        facial_expression = {
+            '1' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Neutral expression",
+                "score": rubricscores['facial_expression'],
+                "explanation": " No facial expressions observed throughout session (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). Smile at end of exchange does not count."
+            },
+            '3' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Some expressions were observed",
+                "score": rubricscores['facial_expression'],
+                "explanation": "Occurrences of facial expressions were intermittent over the session (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). Possible instances of nonpurposeful distracting facial movements that were repetitive. Smile at end of exchange does not count."
+            },
+            '5' : {
+                "cue": "FACIAL EXPRESSIONS",
+                "observation": "Facial expressions were Consistent",
+                "score": rubricscores['facial_expression'],
+                "explanation": "Four or more instances of facial expressions across two or more responses (raised eyebrows or furrowed brow, wider eyes, smiling, deliberate head movement). No distracting movements. Smile at end of exchange does not count."
+            }
+        } 
+        print(facial_expression)
+        
+        print("[INFO]:Dictionaries created")
+        
+        stance_score=str(rubricscores['stance'])
+        print(stance_score)
+        eyecontact_score=str(rubricscores['eye_contact'])
+        gesture_score=str(rubricscores['gestures'])
+        facial_score=str(rubricscores['facial_expression'])
+        print(facial_score)
+        
+        print("[INFO]:Made dict acc to score")
+
+        stancee=stance[stance_score]
+        eyee=eye_contact[eyecontact_score]
+        gesturee=gestures[gesture_score]
+        faciall=facial_expression[facial_score] 
+
+        print("[INFO]:Collected details for table")
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = stancee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = stancee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(stancee["score"])
+        row_cells[3].text = stancee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = eyee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = eyee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(eyee["score"])
+        row_cells[3].text = eyee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = gesturee["cue"].replace('\xa0', ' ')
+        row_cells[1].text = gesturee["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(gesturee["score"])
+        row_cells[3].text = gesturee["explanation"].replace('\xa0', ' ')
+
+        row_cells = table.add_row().cells
+        row_cells[0].text = faciall["cue"].replace('\xa0', ' ')
+        row_cells[1].text = faciall["observation"].replace('\xa0', ' ')
+        row_cells[2].text = str(faciall["score"])
+        row_cells[3].text = faciall["explanation"].replace('\xa0', ' ')
+        
+
+        print("[INFO]:Table added")
+        
+        
+        
+        
+        doc.add_paragraph(f"Report:")
         doc.add_paragraph(f"Duration: {report['duration_sec']} seconds")
         doc.add_paragraph(f"Final BPM: {report.get('final_bpm', 'N/A')}")
         doc.add_paragraph(f"Strictness Level: {strictness}")
@@ -488,7 +788,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc.add_paragraph(f"Hands Outside Gesture Box: {normalized_report.get('hands_outside_gesture_box_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Clenched: {normalized_report.get('hands_clenched_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Behind Back: {normalized_report.get('hands_behind_back_count', 0):.2f} per minute")
-        doc.add_paragraph(f"Hands in Pockets: {normalized_report.get('hands_in_pockets_count', 0):.2f} per minute")
+        # doc.add_paragraph(f"Hands in Pockets: {normalized_report.get('hands_in_pockets_count', 0):.2f} per minute")
         doc.add_paragraph(" ")
         doc.add_paragraph(f"Emotion Stats: {emotion_stats}")
         doc.add_paragraph(f"[SCORE] {grade['rubric_scores']}")
@@ -521,23 +821,23 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
             else:
                 print(f"[INFO] {gesture} is within normal range.")
         print("Adding hands behind back")        
-        if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
-                    doc.add_heading("Hands behind Back", level=2)
-                    feed=gesture_feedback["hands_behind_back_count"]
-                    doc.add_paragraph(feed["text"])
-                    if "image" in feed:
-                        image_path = os.path.join("images", feed["image"])
-                        print(f"[INFO] Attempting to load image for hands behind back: {image_path}")
-                        if os.path.exists(image_path):
-                            doc.add_picture(image_path, width=Inches(2))
-                            print(f"[SUCCESS] Image added: {image_path}")
-                        else:
-                            print(f"[WARNING] Image not found: {image_path}")
+        # if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
+        #             doc.add_heading("Hands behind Back", level=2)
+        #             feed=gesture_feedback["hands_behind_back_count"]
+        #             doc.add_paragraph(feed["text"])
+        #             if "image" in feed:
+        #                 image_path = os.path.join("images", feed["image"])
+        #                 print(f"[INFO] Attempting to load image for hands behind back: {image_path}")
+        #                 if os.path.exists(image_path):
+        #                     doc.add_picture(image_path, width=Inches(2))
+        #                     print(f"[SUCCESS] Image added: {image_path}")
+        #                 else:
+        #                     print(f"[WARNING] Image not found: {image_path}")
                     
-                    if "additional" in feed:
-                        doc.add_heading("Additional Notes", level=3)
-                        doc.add_paragraph(feed["additional"])
-        print("Added hands behind back")                        
+        #             if "additional" in feed:
+        #                 doc.add_heading("Additional Notes", level=3)
+        #                 doc.add_paragraph(feed["additional"])
+        # print("Added hands behind back")                        
         # Additional feedback
         print("[INFO] Adding additional feedback...")
         for key, feedback in additional_feedback.items():

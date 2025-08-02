@@ -337,7 +337,8 @@ class FeedbackApp:
             return
         try:
             report = self.stats.copy()
-            generate_feedback_doc(report,self.abnormal_thresholds ,self.strictness)
+            print(self.stats['grade'])
+            generate_feedback_doc(report,self.stats['grade'],self.abnormal_thresholds ,self.strictness)
             print("[INFO] Feedback document generated successfully.")
         except Exception as e:
             print(f"[ERROR] Failed to generate feedback document: {str(e)}")
