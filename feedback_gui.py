@@ -36,6 +36,7 @@ class FeedbackApp:
             'hands_clenched_count': 0,
             'hands_behind_back_count': 2,
             'hands_in_pockets_count': 2,
+            'upper_body_sway_percent':50,
             "final_bpm": 20,
         }
 

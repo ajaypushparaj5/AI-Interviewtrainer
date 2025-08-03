@@ -4,6 +4,7 @@ from docx import Document
 from docx.shared import Inches
 
 def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
+    print("[INFO] Upperbody sway:",report['upper_body_sway_count'])
     print("[INFO] Starting feedback document generation...")
     print("[Info] This is the recieved grade:",grade)
 
@@ -40,6 +41,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
             "hands_clenched_count": norm(report.get("hands_clenched_count", 0)),
             "hands_behind_back_count": norm(report.get("hands_behind_back_count", 0)),
             "hands_in_pockets_count": norm(report.get("hands_in_pockets_count", 0)),
+            'upper_body_sway_percent':report.get('upper_body_sway_percent',0),
             "final_bpm": report.get("final_bpm", 0)
         }
 
@@ -112,6 +114,12 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
         
         "leg_bouncing_count": {
             "title":"Leg swaying",
+            "text": "Rocking, swaying, or aimless walking shows nervousness or low confidence. Too much movement distracts the audience, pulls attention away from the message, and reduces credibility. Practice grounding your stance with feet shoulder-width apart. Use walking sparingly and intentionally.",
+            "image": "leg_bouncing_count.png"
+            },
+        
+        "upper_body_sway_percent": {
+            "title":"Upper body swaying observed",
             "text": "Rocking, swaying, or aimless walking shows nervousness or low confidence. Too much movement distracts the audience, pulls attention away from the message, and reduces credibility. Practice grounding your stance with feet shoulder-width apart. Use walking sparingly and intentionally.",
             "image": "leg_bouncing_count.png"
             },
@@ -360,6 +368,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
         doc.add_paragraph(f"Hands Clenched: {normalized_report['hands_clenched_count']:.2f} per minute")
         doc.add_paragraph(f"Hands Behind Back: {normalized_report['hands_behind_back_count']:.2f} per minute")
         doc.add_paragraph(f"Hands in Pockets: {normalized_report['hands_in_pockets_count']:.2f} per minute")
+        doc.add_paragraph(f"Upperbody Swaying Percentage: {report.get('upper_body_sway_percent', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Outside Gesture Box: {normalized_report['hands_outside_gesture_box_count']:.2f} per minute")
         doc.add_paragraph(f"Legs Crossed: {normalized_report['leg_crossed_count']:.2f} per minute")
         doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
@@ -466,6 +475,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
             "leg_crossed_count": norm(report["leg_crossed_count"]),
             "leg_bouncing_count": norm(report["leg_bouncing_count"]),
             "hand_on_hip_count": norm(report.get("hand_on_hip_count", 0)),
+            'upper_body_sway_percent':report.get('upper_body_sway_percent',0),
             "final_bpm": report.get("final_bpm", 0)
         }
 
@@ -547,6 +557,12 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
             "image": "hands_on_hip_count.png",
             "additional": "While sitting, the ankle lock gesture is a negative or defensive attitude. It is often combined with clenched fists resting on the knees or with the hands tightly gripping the arms of the chair (male version). The female version varies slightly; the knees are held together, the feet may be to one side, and the hands rest side by side or one on top of the other, resting on the upper legs. The gesture is one of holding back a negative attitude, emotion, nervousness, or fear. If feet are withdrawn under a chair, it shows that the person also has a withdrawn attitude. However, If the legs are outstretched and loosely crossed at the ankle, it usually signals that the person is at ease and comfortable. Placing both feet on the ground with a standard gap between them is the most basic normal position. It serves as a neutral but powerful starting point."
             },
+        
+        'upper_body_sway_percent': {    
+            "title":"Upperbody Swaying Detected",
+            "text": "Rocking, swaying, or aimless walking shows nervousness or low confidence. Too much movement distracts the audience, pulls attention away from the message, and reduces credibility. Practice grounding your stance with feet shoulder-width apart. Use walking sparingly and intentionally.",
+            "image": "leg_bouncing_count.png"
+        },
         
         "hands_outside_gesture_box_count": {
             'title':"Purposeful Gestures",
@@ -788,7 +804,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc.add_paragraph(f"Hands Outside Gesture Box: {normalized_report.get('hands_outside_gesture_box_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Clenched: {normalized_report.get('hands_clenched_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Behind Back: {normalized_report.get('hands_behind_back_count', 0):.2f} per minute")
-        # doc.add_paragraph(f"Hands in Pockets: {normalized_report.get('hands_in_pockets_count', 0):.2f} per minute")
+        doc.add_paragraph(f"Upperbody Swaying Percentage: {report.get('upper_body_sway_percent', 0):.2f} per minute")
         doc.add_paragraph(" ")
         doc.add_paragraph(f"Emotion Stats: {emotion_stats}")
         doc.add_paragraph(f"[SCORE] {grade['rubric_scores']}")

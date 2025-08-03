@@ -18,6 +18,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
             "hands_clenched_count": 2,
             "hands_behind_back_count": 2,
             "hands_in_pockets_count": 3,
+            'upper_body_sway_percent':30,
             "final_bpm": 20,
         }
 
@@ -41,15 +42,15 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
     neck_touches = norm(report["neck_touch_count"])
     leg_bouncing = norm(report["leg_bouncing_count"])
     hands_outside_gesture_box = norm(report["hands_outside_gesture_box_count"])
-
+    swaypercent=report['upper_body_sway_percent']
     
     
     # Stance.
     
-    stancemetric=leg_bouncing
-    stance_score = (1 if stancemetric >= 8  else
-                    3 if stancemetric >= 3 and stancemetric < 8 else
-                    5 if stancemetric < 3 else 0)
+    stancemetric=swaypercent
+    stance_score = (1 if stancemetric >= 70  else
+                    3 if stancemetric >= 40 and stancemetric < 70 else
+                    5 if stancemetric < 40 else 0)
     
     # Eye Contact
     

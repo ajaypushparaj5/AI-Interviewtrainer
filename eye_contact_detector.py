@@ -94,7 +94,7 @@ def blinking(right_eye, left_eye, last_blink_time, eye_history, cooldown=0.6):
     
 
     recent_avg = sum(eye_history) / len(eye_history)
-    threshold = recent_avg * 0.7
+    threshold = recent_avg * 0.7  
     
     if avg_eye < threshold and (current_time - last_blink_time) > cooldown:
         print(f"Blink detected: {avg_eye:.3f} < {threshold:.3f}")

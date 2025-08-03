@@ -31,6 +31,11 @@ def run_analysis(cap, log=print, true_duration=None):
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5
     )
+    
+    sway_frames = 0
+    sway_total_frames = 0
+    movement_threshold = 0.05
+    
     blink_times = []
     avgbpm = avgcount = count = eyecount = 0
     lastblinktime = lastbpmtime = time.time()
@@ -43,7 +48,7 @@ def run_analysis(cap, log=print, true_duration=None):
     hand_on_hip_count = 0
     lastgesturebox_time = time.time()
     gesturebox_count = 0
-    lasthandsclenched = time.time()
+    lasthandsclenched = 0
     handsclenched_count = 0
     lasthandstiedback = time.time()
     handstiedback_count = 0
@@ -52,8 +57,7 @@ def run_analysis(cap, log=print, true_duration=None):
     lastbounce_time = time.time()
     lasthandonhip = time.time()
     arms_crossed_count = 0
-    hand_violation_logged = False 
-    lastarms_crossed_time = time.time()
+    lastarms_crossed_time = 0
     sway={
         'left_leg_x': deque(maxlen=10),
         'right_leg_x': deque(maxlen=10), 
@@ -95,6 +99,11 @@ def run_analysis(cap, log=print, true_duration=None):
             if slouch:
                 slouchcount += 1    
                 log("Sit Straight!")
+                
+            sway_frames, sway_total_frames, sway_percent = detect_upperbody_swaying(results.pose_landmarks, sway_frames, sway_total_frames, movement_threshold)
+            if sway_percent > 30:
+                log(f"Upper body swaying detected! ({sway_percent:.1f}%)")
+
                 
             motion_detected, sway = detect_leg_motion(
             results.pose_landmarks, 
@@ -233,6 +242,7 @@ def run_analysis(cap, log=print, true_duration=None):
         'hands_behind_back_count': round((handstiedback_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'hands_in_pockets_count': round((handinpocket_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'final_bpm': round(avgbpm, 2),
+        'upper_body_sway_percent':sway_percent,
         'duration_sec': video_duration,
         'session_duration': session_duration
     
@@ -240,38 +250,238 @@ def run_analysis(cap, log=print, true_duration=None):
     
     
     
-    # report = {
-    #     "eye_contact_breaks": eyecount,
-    #     "total_blinks": count,
-    #     "mouth_touch_count": mouthtouch_count,
-    #     "nose_touch_count": nosetouch_count,
-    #     "eye_touch_count": eyetouch_count,
-    #     "ear_touch_count": eartouch_count,
-    #     "neck_touch_count": necktouch_count,
-    #     "arms_crossed_for_3_sec_count": arms_crossed_count,
-    #     "slouching": slouchcount,
-    #     "leg_crossed_count": legcrossedcount,
-    #     "leg_bouncing_count": legbouncingcount,
-    #     "hand_on_hip_count": hand_on_hip_count,
-    #     "final_bpm": round(avgbpm, 2),
-    #     "duration_sec": video_duration
-    # }
-    # report = {
-    #     "eye_contact_breaks": eyecount,
-    #     "total_blinks": count,
-    #     "mouth_touch_count": mouthtouch_count,
-    #     "nose_touch_count": nosetouch_count,
-    #     "eye_touch_count": eyetouch_count,
-    #     "ear_touch_count": eartouch_count,
-    #     "neck_touch_count": necktouch_count,
-    #     "arms_crossed_duration": round(time.time() - arms_crossed_start, 2) if arms_crossed_start else 0,
-    #     "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
-    #     "final_bpm": round(avgbpm, 2),
-    #     "duration_sec": session_duration
-    # }
+#     # report = {
+#     #     "eye_contact_breaks": eyecount,
+#     #     "total_blinks": count,
+#     #     "mouth_touch_count": mouthtouch_count,
+#     #     "nose_touch_count": nosetouch_count,
+#     #     "eye_touch_count": eyetouch_count,
+#     #     "ear_touch_count": eartouch_count,
+#     #     "neck_touch_count": necktouch_count,
+#     #     "arms_crossed_for_3_sec_count": arms_crossed_count,
+#     #     "slouching": slouchcount,
+#     #     "leg_crossed_count": legcrossedcount,
+#     #     "leg_bouncing_count": legbouncingcount,
+#     #     "hand_on_hip_count": hand_on_hip_count,
+#     #     "final_bpm": round(avgbpm, 2),
+#     #     "duration_sec": video_duration
+#     # }
+#     # report = {
+#     #     "eye_contact_breaks": eyecount,
+#     #     "total_blinks": count,
+#     #     "mouth_touch_count": mouthtouch_count,
+#     #     "nose_touch_count": nosetouch_count,
+#     #     "eye_touch_count": eyetouch_count,
+#     #     "ear_touch_count": eartouch_count,
+#     #     "neck_touch_count": necktouch_count,
+#     #     "arms_crossed_duration": round(time.time() - arms_crossed_start, 2) if arms_crossed_start else 0,
+#     #     "posture_warnings": "Slouching detected" if lastslouch else "Good posture",
+#     #     "final_bpm": round(avgbpm, 2),
+#     #     "duration_sec": session_duration
+#     # }
     log(str(report))
     return report
 
 
 
 
+# def run_analysis(cap, log=print, true_duration=None):
+#     import mediapipe as mp
+#     import time
+
+#     print("[DEBUG] Initializing analysis...")
+#     start_time = time.time()
+
+#     mp_holistic = mp.solutions.holistic
+#     holistic = mp_holistic.Holistic(
+#         static_image_mode=False,
+#         model_complexity=1,
+#         smooth_landmarks=True,
+#         refine_face_landmarks=True,
+#         min_detection_confidence=0.5,
+#         min_tracking_confidence=0.5
+#     )
+
+#     sway_frames = 0
+#     sway_total_frames = 0
+#     movement_threshold = 0.05
+#     blink_times = []
+#     avgbpm = avgcount = count = eyecount = 0
+#     lastblinktime = lastbpmtime = time.time()
+#     lastgazetime = time.time()
+#     lastcrossed_time = time.time()
+#     slouchcount = 0
+#     lastslouch = 0
+#     legcrossedcount = 0
+#     legbouncingcount = 0
+#     hand_on_hip_count = 0
+#     lastgesturebox_time = time.time()
+#     gesturebox_count = 0
+#     lasthandsclenched = 0
+#     handsclenched_count = 0
+#     lasthandstiedback = time.time()
+#     handstiedback_count = 0
+#     lasthandinpocket = time.time()
+#     handinpocket_count = 0
+#     lastbounce_time = time.time()
+#     lasthandonhip = time.time()
+#     arms_crossed_count = 0
+#     lastarms_crossed_time = 0
+#     sway = {
+#         'left_leg_x': deque(maxlen=10),
+#         'right_leg_x': deque(maxlen=10),
+#         'last_sway_time': 0,
+#         'frame_count': 0
+#     }
+#     eyehistory = deque(maxlen=10)
+#     mouth_last_check = nose_last_check = eye_last_check = ear_last_check = neck_last_check = None
+#     mouth_start_time = nose_start_time = eye_start_time = ear_start_time = neck_start_time = None
+#     mouthtouch_count = nosetouch_count = eyetouch_count = eartouch_count = necktouch_count = 0
+
+#     cv2.namedWindow("Live Feedback", cv2.WINDOW_NORMAL)
+#     print("[DEBUG] Starting frame loop...")
+
+#     while cap.isOpened():
+#         current_time = time.time()
+#         ret, frame = cap.read()
+#         if not ret:
+#             log("[ERROR] Couldn't read frame from video.")
+#             break
+
+#         try:
+#             rgb_frame = bgr2rgb(frame)
+#             results = holistic.process(rgb_frame)
+#         except Exception as e:
+#             log(f"[ERROR] Failed to process frame: {e}")
+#             continue
+
+#         if results.face_landmarks:
+#             frame = display_facial_landmarks(frame, results.face_landmarks)
+
+#         if results.pose_landmarks:
+#             frame = display_pose(frame, results.pose_landmarks)
+#             frame = display_legs(frame, results.pose_landmarks)
+
+#             legscrossed, lastcrossed_time = detect_crossed_legs(results.pose_landmarks, lastcrossed_time)
+#             if legscrossed:
+#                 legcrossedcount += 1
+#                 log("[DEBUG] Legs crossed")
+
+#             slouch, lastslouch = slouch_detector(frame, results.pose_landmarks, lastslouch)
+#             if slouch:
+#                 slouchcount += 1
+#                 log("[DEBUG] Slouch detected")
+
+#             sway_frames, sway_total_frames, sway_percent = detect_upperbody_swaying(
+#                 results.pose_landmarks, sway_frames, sway_total_frames, movement_threshold)
+#             if sway_percent > 30:
+#                 log(f"[DEBUG] Swaying >30%: {sway_percent:.1f}%")
+
+#             motion_detected, sway = detect_leg_motion(results.pose_landmarks, sway)
+#             if motion_detected:
+#                 legbouncingcount += 1
+#                 log("[DEBUG] Leg bouncing detected")
+
+#             arms_crossed, lastarms_crossed_time = arms_crossed_detector(results.pose_landmarks, lastarms_crossed_time)
+#             if arms_crossed:
+#                 arms_crossed_count += 1
+#                 log("[DEBUG] Arms crossed")
+
+#             gesturebox, lastgesturebox_time = hands_outside_gesture_box(results.pose_landmarks, lastgesturebox_time)
+#             if gesturebox:
+#                 gesturebox_count += 1
+#                 log("[DEBUG] Hands outside gesture box")
+
+#             handsclenched, lasthandsclenched = hands_clenched_detector(results.pose_landmarks, lasthandsclenched)
+#             if handsclenched:
+#                 handsclenched_count += 1
+#                 log("[DEBUG] Hands clenched")
+
+#             handstiedback, lasthandstiedback = hands_behind_back_detector(results.pose_landmarks, lasthandstiedback)
+#             if handstiedback:
+#                 handstiedback_count += 1
+#                 log("[DEBUG] Hands behind back")
+
+#             handinpocket, lasthandinpocket = hands_in_pockets_detector(results.pose_landmarks, lasthandinpocket)
+#             if handinpocket:
+#                 handinpocket_count += 1
+#                 log("[DEBUG] Hands in pockets")
+
+#         if results.face_landmarks:
+#             face_landmarks = results.face_landmarks
+#             righteyedist = get_eye_distance(frame, face_landmarks, 159, 145)
+#             lefteyedist = get_eye_distance(frame, face_landmarks, 386, 374)
+
+#             blinkcheck, lastblinktime = blinking(righteyedist, lefteyedist, lastblinktime, eyehistory)
+#             if blinkcheck:
+#                 blink_times.append(current_time)
+#                 count += 1
+
+#             gazeoff, lastgazetime = gaze_detector(frame, face_landmarks, lastgazetime)
+#             if gazeoff:
+#                 eyecount += 1
+#                 log("[DEBUG] Gaze break")
+
+#             hand_landmarks = results.left_hand_landmarks or results.right_hand_landmarks
+#             if hand_landmarks:
+#                 # Touch detection
+#                 for name, contact_func, last_check, start_time, touch_count in [
+#                     ("mouth", hand_mouth_contact, mouth_last_check, mouth_start_time, mouthtouch_count),
+#                     ("nose", hand_nose_contact, nose_last_check, nose_start_time, nosetouch_count),
+#                     ("eye", hand_eye_contact, eye_last_check, eye_start_time, eyetouch_count),
+#                     ("ear", hand_ear_contact, ear_last_check, ear_start_time, eartouch_count),
+#                     ("neck", hand_neck_contact, neck_last_check, neck_start_time, necktouch_count)
+#                 ]:
+#                     touched, last_check, start_time, touch_count = update_touch_state(
+#                         frame, face_landmarks, hand_landmarks, last_check, start_time, touch_count, contact_func
+#                     )
+#                     if touched:
+#                         log(f"[DEBUG] Hand touched {name} — Total: {touch_count}")
+
+#         if time.time() - lastbpmtime >= 10:
+#             recent_blinks = [t for t in blink_times if current_time - t <= 60.0]
+#             bpm = len(recent_blinks)
+#             avgcount += 1
+#             avgbpm = ((avgbpm * (avgcount - 1)) + bpm) / avgcount
+#             log(f"[DEBUG] BPM: {bpm}")
+#             lastbpmtime = time.time()
+
+#         cv2.imshow("Live Feedback", frame)
+#         if cv2.waitKey(1) & 0xFF == ord('q'):
+#             log("[INFO] 'q' pressed — exiting.")
+#             break
+
+#     print("[DEBUG] Exiting frame loop.")
+#     cap.release()
+#     cv2.destroyAllWindows()
+#     holistic.close()
+
+#     end_time = time.time()
+#     session_duration = round(end_time - start_time, 2)
+#     video_duration = round(true_duration, 2) if true_duration else session_duration
+
+#     report = {
+#         'eye_contact_breaks': round(abs((eyecount) * video_duration / session_duration)) if session_duration > 0 else 0,
+#         'total_blinks': len(blink_times),
+#         'mouth_touch_count': round((mouthtouch_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'nose_touch_count': round((nosetouch_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'eye_touch_count': round((eyetouch_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'ear_touch_count': round((eartouch_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'neck_touch_count': round((necktouch_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'arms_crossed_for_3_sec_count': round((arms_crossed_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'slouching': round(abs((slouchcount) * video_duration / session_duration)) if session_duration > 0 else 0,
+#         'leg_crossed_count': round((legcrossedcount) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'leg_bouncing_count': round((legbouncingcount) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'hand_on_hip_count': round((hand_on_hip_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'hands_outside_gesture_box_count': round((gesturebox_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'hands_clenched_count': round((handsclenched_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'hands_behind_back_count': round((handstiedback_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'hands_in_pockets_count': round((handinpocket_count) * video_duration / session_duration) if session_duration > 0 else 0,
+#         'final_bpm': round(avgbpm, 2),
+#         'duration_sec': video_duration,
+#         'session_duration': session_duration
+#     }
+
+#     log("[INFO] Final Report:")
+#     log(str(report))
+#     return report

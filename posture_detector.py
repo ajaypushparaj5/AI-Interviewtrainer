@@ -4,6 +4,7 @@ import mediapipe as mp
 import time
 import math
 
+
 def coords(lm,shape):
     return mp.solutions.drawing_utils._normalized_to_pixel_coordinates(lm.x, lm.y, shape[1], shape[0])
 
@@ -118,10 +119,42 @@ def slouch_detector(rgb_frame, results, lastslouch):
     return False, lastslouch
 
     
-def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
+# def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
 
+#     if not results or not hasattr(results, 'landmark'):
+#         return False, lastcrossed
+    
+#     current_time = time.time()
+#     lm = results.landmark
+    
+#     left_elbow = lm[13]
+#     right_elbow = lm[14]
+#     left_wrist = lm[15]
+#     right_wrist = lm[16]
+    
+#     def is_horizontal(p1, p2, threshold_deg):
+#         dx = abs(p2.x - p1.x)
+#         dy = abs(p2.y - p1.y)
+#         if dx == 0:  
+#             return False
+#         angle = math.degrees(math.atan(dy / dx))
+#         return angle <= threshold_deg
+    
+#     left_horizontal = is_horizontal(left_elbow, left_wrist, angle_threshold)
+#     right_horizontal = is_horizontal(right_elbow, right_wrist, angle_threshold)
+    
+#     wrist_inside = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x) 
+     
+#     if (left_horizontal or right_horizontal) and wrist_inside:
+#         if current_time - lastcrossed > 1:
+#             lastcrossed = current_time
+#             return True, lastcrossed
+    
+#     return False, lastcrossed    
+    
+def arms_crossed_detector(results, crossed_start_time, angle_threshold=25):
     if not results or not hasattr(results, 'landmark'):
-        return False, lastcrossed
+        return False, 0  # Reset if no pose
     
     current_time = time.time()
     lm = results.landmark
@@ -139,81 +172,28 @@ def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
         angle = math.degrees(math.atan(dy / dx))
         return angle <= threshold_deg
     
+    # Check if currently crossed
     left_horizontal = is_horizontal(left_elbow, left_wrist, angle_threshold)
     right_horizontal = is_horizontal(right_elbow, right_wrist, angle_threshold)
-    
     wrist_inside = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x) 
-     
-    if (left_horizontal or right_horizontal) and wrist_inside:
-        if current_time - lastcrossed > 1:
-            lastcrossed = current_time
-            return True, lastcrossed
     
-    return False, lastcrossed    
+    currently_crossed = (left_horizontal or right_horizontal) and wrist_inside
     
+    if currently_crossed:
+        if crossed_start_time == 0:
+            # Just started crossing
+            return False, current_time
+        elif current_time - crossed_start_time >= 3.0:
+            # Been crossing for 3+ seconds
+            return True, 0  # Reset after detection
+        else:
+            # Still crossing but not 3 seconds yet
+            return False, crossed_start_time
+    else:
+        # Not crossing - reset
+        return False, 0
     
 
-# def check_hand_in_restricted_zone(frame, pose_landmarks, hand_landmarks, log):
-#     if pose_landmarks is None or hand_landmarks is None:
-#         return False        
-
-#     h, w, _ = frame.shape
-#     lm = pose_landmarks.landmark
-
-#     left_shoulder = lm[11]
-#     right_shoulder = lm[12]
-#     left_hip = lm[23]
-#     right_hip = lm[24]
-
-#     x_min = int((min(left_shoulder.x, right_shoulder.x) + 0.05) * w)
-#     x_max = int((max(left_shoulder.x, right_shoulder.x) - 0.05) * w)
-#     y_min = int(min(left_shoulder.y, right_shoulder.y) * h) + 10
-#     y_max = int(max(left_hip.y, right_hip.y) * h) - 10
-
-#     cv2.rectangle(frame, (x_min, y_min), (x_max, y_max), (0, 0, 255), 2)
-
-#     for lm in hand_landmarks.landmark:
-#         x = int(lm.x * w)
-#         y = int(lm.y * h)
-#         if x_min <= x <= x_max and y_min <= y <= y_max:
-#             return True
-#     return False
-
-    
-# def is_hand_outside_safezone(frame, pose_landmarks, hand_landmarks, log=None):
-#     if pose_landmarks is None or hand_landmarks is None:
-#         return False
-
-#     h, w, _ = frame.shape
-#     landmarks = pose_landmarks.landmark
-
-#     left_shoulder = landmarks[11]
-#     right_shoulder = landmarks[12]
-#     left_hip = landmarks[23]
-#     right_hip = landmarks[24]
-
-#     top_y = int(min(left_shoulder.y, right_shoulder.y) * h)
-#     bottom_y = int(max(left_hip.y, right_hip.y) * h)
-#     center_x = int((left_shoulder.x + right_shoulder.x) / 2 * w)
-#     box_width = int(abs(right_shoulder.x - left_shoulder.x) * w * 1.2)
-
-#     left_x = center_x - box_width // 2
-#     right_x = center_x + box_width // 2
-
-#     fingertip_indices = [4, 8, 12, 16, 20]
-#     out_count = 0
-#     for idx in fingertip_indices:
-#         x = int(hand_landmarks.landmark[idx].x * w)
-#         y = int(hand_landmarks.landmark[idx].y * h)
-#         if not (left_x <= x <= right_x and top_y <= y <= bottom_y):
-#             out_count += 1
-
-#     if out_count >= 3:
-#         if log:
-#             log("[WARNING] Hand moved outside safe zone!")
-#         return True
-
-#     return False
 
 def hands_outside_gesture_box(results, last_outside, 
                             horizontal_threshold=0.15, 
@@ -278,52 +258,47 @@ def hands_outside_gesture_box(results, last_outside,
     
     return False, last_outside
 
-# def hands_clenched_detector(results, last_clenched, distance_threshold=0.05):
-#     """
-#     Detects when hands are clenched together (clasped/interlocked)
-#     """
-#     if not results or not hasattr(results, 'landmark'):
-#         return False, last_clenched
-    
-#     current_time = time.time()
-#     lm = results.landmark
-    
-#     left_wrist = lm[15]
-#     right_wrist = lm[16]
-#     left_thumb = lm[21]  # Left thumb tip
-#     right_thumb = lm[22] # Right thumb tip
-    
-#     # Calculate distance between wrists
-#     wrist_distance = math.sqrt((left_wrist.x - right_wrist.x)**2 + 
-#                               (left_wrist.y - right_wrist.y)**2)
-    
-#     # Calculate distance between thumbs (closer when hands are clasped)
-#     thumb_distance = math.sqrt((left_thumb.x - right_thumb.x)**2 + 
-#                               (left_thumb.y - right_thumb.y)**2)
-    
-#     # Hands are in front of body (between shoulders horizontally)
-#     left_shoulder = lm[11]
-#     right_shoulder = lm[12]
-#     hands_centered = (min(left_shoulder.x, right_shoulder.x) < 
-#                      (left_wrist.x + right_wrist.x) / 2 < 
-#                      max(left_shoulder.x, right_shoulder.x))
-    
-#     # Check if hands are close together and centered
-#     hands_close = wrist_distance < distance_threshold and thumb_distance < distance_threshold * 1.5
-    
-#     if hands_close and hands_centered:
-#         if current_time - last_clenched > 1:
-#             last_clenched = current_time
-#             return True, last_clenched
-    
-#     return False, last_clenched
 
-import time
-import math
+def detect_upperbody_swaying(pose_landmarks, sway_frames, total_frames, movement_threshold=0.01):
+    total_frames += 1
 
+    if not pose_landmarks:
+        return sway_frames, total_frames, (sway_frames / total_frames) * 100
+    
+    lm = pose_landmarks.landmark
+    left_shoulder = lm[11]
+    right_shoulder = lm[12]
+    nose = lm[0]
+
+    spine_center_x = (left_shoulder.x + right_shoulder.x) / 2
+    spine_center_y = (left_shoulder.y + right_shoulder.y) / 2
+
+    if not hasattr(detect_upperbody_swaying, 'positions'):
+        detect_upperbody_swaying.positions = []
+
+    current_position = (spine_center_x, spine_center_y, nose.x)
+    detect_upperbody_swaying.positions.append(current_position)
+
+    if len(detect_upperbody_swaying.positions) > 10:
+        detect_upperbody_swaying.positions.pop(0)
+
+    is_swaying = False
+    if len(detect_upperbody_swaying.positions) >= 5:
+        positions = detect_upperbody_swaying.positions
+        spine_x_positions = [pos[0] for pos in positions]
+        head_x_positions = [pos[2] for pos in positions]
+        spine_movement = max(spine_x_positions) - min(spine_x_positions)
+        head_movement = max(head_x_positions) - min(head_x_positions)
+        is_swaying = spine_movement > movement_threshold or head_movement > movement_threshold
+
+    if is_swaying:
+        sway_frames += 1
+
+    sway_percentage = (sway_frames / total_frames) * 100
+    return sway_frames, total_frames, sway_percentage
 
 def hands_clenched_detector(results, last_clenched, distance_threshold=0.1):
-
+    current_time=time.time()
     if not results:
         return False, last_clenched
 
@@ -337,13 +312,17 @@ def hands_clenched_detector(results, last_clenched, distance_threshold=0.1):
         (left_wrist.y - right_wrist.y) ** 2
     )
 
-    current_time = time.time()
     if wrist_distance < distance_threshold:
-        if current_time - last_clenched > 1:
-            last_clenched = current_time
-            return True, last_clenched
+        if last_clenched == 0:
+            return False, current_time
+        elif current_time - last_clenched >= 3:
+            return True, 0
+        else:
+            return False, last_clenched
+    else:
+        return False, 0
 
-    return False, last_clenched
+    
 
 
 def hands_behind_back_detector(results, last_behind, visibility_threshold=0.3):
