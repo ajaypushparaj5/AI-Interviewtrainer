@@ -32,11 +32,11 @@ class FeedbackApp:
             "leg_crossed_count": 2,
             "leg_bouncing_count": 2,
             "hand_on_hip_count": 2,
-            'hands_outside_gesture_box_count': 5,
+            'hands_outside_gesture_box_count': 20,
             'hands_clenched_count': 0,
             'hands_behind_back_count': 2,
             'hands_in_pockets_count': 2,
-            'upper_body_sway_percent':50,
+            'upper_body_sway_percent':40,
             "final_bpm": 20,
         }
 

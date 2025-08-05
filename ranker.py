@@ -14,7 +14,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
             "leg_crossed_count": 2,
             "leg_bouncing_count": 8,
             "hand_on_hip_count": 2,
-            "hands_outside_gesture_box_count": 3,
+            "hands_outside_gesture_box_count": 20,
             "hands_clenched_count": 2,
             "hands_behind_back_count": 2,
             "hands_in_pockets_count": 3,
@@ -41,7 +41,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
     ear_touches = norm(report["ear_touch_count"])
     neck_touches = norm(report["neck_touch_count"])
     leg_bouncing = norm(report["leg_bouncing_count"])
-    hands_outside_gesture_box = norm(report["hands_outside_gesture_box_count"])
+    hands_outside_gesture_box = report["hands_outside_gesture_box_count"]
     swaypercent=report['upper_body_sway_percent']
     
     
@@ -60,9 +60,9 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
 
     #Gestures
     fitget_metric = mouth_touches + nose_touches + eye_touches + ear_touches + neck_touches
-    gesture_score=   (1 if hands_outside_gesture_box >=25 or fitget_metric > 10  else
-                    3 if hands_outside_gesture_box >= 10 and hands_outside_gesture_box < 25 else
-                    5 if hands_outside_gesture_box < 10 else 0)
+    gesture_score=   (1 if hands_outside_gesture_box >=40 or fitget_metric > 10  else
+                    3 if hands_outside_gesture_box >= 20 and hands_outside_gesture_box < 40 else
+                    5 if hands_outside_gesture_box < 20 else 0)
     
     # Facial Expression
     

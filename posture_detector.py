@@ -79,7 +79,7 @@ def display_pose(rgb_frame, results):
     shoulder_width = abs(rs.x - ls.x)
     torso_height = abs(ls.y - lh.y)
     
-    # Gesture box thresholds (matching the detector function)
+    # Gesture box thresholds 
     horizontal_threshold = 0.15
     vertical_threshold = 0.1
     
@@ -89,7 +89,7 @@ def display_pose(rgb_frame, results):
     gesture_top = int((ls.y - (vertical_threshold * torso_height)) * h)
     gesture_bottom = int((lh.y + (vertical_threshold * torso_height)) * h)
     
-    # Draw gesture box (cyan color for distinction)
+    # Draw gesture box 
     cv2.rectangle(rgb_frame, (gesture_left, gesture_top), (gesture_right, gesture_bottom), (255, 255, 0), 2)
     
     return rgb_frame
@@ -195,28 +195,91 @@ def arms_crossed_detector(results, crossed_start_time, angle_threshold=25):
     
 
 
-def hands_outside_gesture_box(results, last_outside, 
-                            horizontal_threshold=0.15, 
-                            vertical_threshold=0.1, 
-                            duration_threshold=0.8):
+# def hands_outside_gesture_box(results, last_outside, 
+#                             horizontal_threshold=0.15, 
+#                             vertical_threshold=0.1, 
+#                             duration_threshold=0.8):
+#     """
+#     Detects if hands are outside the gesture box (shoulder to hip area).
+    
+#     Args:
+#         results: MediaPipe pose detection results
+#         last_outside: timestamp of last detection
+#         horizontal_threshold: extra margin beyond shoulders (0.15 = 15% of shoulder width)
+#         vertical_threshold: extra margin beyond shoulder-hip height (0.1 = 10% of torso height)
+#         duration_threshold: minimum time hands must be outside before triggering
+    
+#     Returns:
+#         tuple: (is_outside_detected, updated_last_outside_time)
+#     """
+    
+#     if not results or not hasattr(results, 'landmark'):
+#         return False, last_outside
+    
+#     current_time = time.time()
+#     lm = results.landmark
+    
+#     # Get key body landmarks
+#     left_shoulder = lm[11]   # Left shoulder
+#     right_shoulder = lm[12]  # Right shoulder
+#     left_hip = lm[23]        # Left hip
+#     right_hip = lm[24]       # Right hip
+#     left_wrist = lm[15]      # Left wrist
+#     right_wrist = lm[16]     # Right wrist
+    
+#     # Calculate gesture box boundaries with lenient thresholds
+#     shoulder_width = abs(right_shoulder.x - left_shoulder.x)
+#     torso_height = abs(left_shoulder.y - left_hip.y)  # Using left side as reference
+    
+#     # Box boundaries (with lenient margins)
+#     left_boundary = left_shoulder.x - (horizontal_threshold * shoulder_width)
+#     right_boundary = right_shoulder.x + (horizontal_threshold * shoulder_width)
+#     top_boundary = left_shoulder.y - (vertical_threshold * torso_height)  # Above shoulders
+#     bottom_boundary = left_hip.y + (vertical_threshold * torso_height)    # Below hips
+    
+#     # Check if hands are outside the gesture box
+#     left_hand_outside = (left_wrist.x < left_boundary or 
+#                         left_wrist.x > right_boundary or
+#                         left_wrist.y < top_boundary or 
+#                         left_wrist.y > bottom_boundary)
+    
+#     right_hand_outside = (right_wrist.x < left_boundary or 
+#                          right_wrist.x > right_boundary or
+#                          right_wrist.y < top_boundary or 
+#                          right_wrist.y > bottom_boundary)
+    
+#     # Trigger detection if either hand is significantly outside
+#     hands_outside = left_hand_outside or right_hand_outside
+    
+#     if hands_outside:
+#         if current_time - last_outside > duration_threshold:
+#             last_outside = current_time
+#             return True, last_outside
+    
+#     return False, last_outside
+
+def hands_outside_gesture_box(results, outside_frames, total_frames, 
+                             horizontal_threshold=0.15, 
+                             vertical_threshold=0.1):
     """
-    Detects if hands are outside the gesture box (shoulder to hip area).
+    Detects if hands are outside the gesture box (shoulder to hip area) and tracks percentage.
     
     Args:
         results: MediaPipe pose detection results
-        last_outside: timestamp of last detection
+        outside_frames: Current count of frames with hands outside
+        total_frames: Total frames processed
         horizontal_threshold: extra margin beyond shoulders (0.15 = 15% of shoulder width)
         vertical_threshold: extra margin beyond shoulder-hip height (0.1 = 10% of torso height)
-        duration_threshold: minimum time hands must be outside before triggering
     
     Returns:
-        tuple: (is_outside_detected, updated_last_outside_time)
+        tuple: (outside_frames, total_frames, outside_percentage, currently_outside)
     """
+    total_frames += 1
     
     if not results or not hasattr(results, 'landmark'):
-        return False, last_outside
+        outside_percentage = (outside_frames / total_frames) * 100
+        return outside_frames, total_frames, outside_percentage, False
     
-    current_time = time.time()
     lm = results.landmark
     
     # Get key body landmarks
@@ -227,15 +290,15 @@ def hands_outside_gesture_box(results, last_outside,
     left_wrist = lm[15]      # Left wrist
     right_wrist = lm[16]     # Right wrist
     
-    # Calculate gesture box boundaries with lenient thresholds
+    # Calculate gesture box boundaries
     shoulder_width = abs(right_shoulder.x - left_shoulder.x)
-    torso_height = abs(left_shoulder.y - left_hip.y)  # Using left side as reference
+    torso_height = abs(left_shoulder.y - left_hip.y)
     
-    # Box boundaries (with lenient margins)
+    # Box boundaries (with margins)
     left_boundary = left_shoulder.x - (horizontal_threshold * shoulder_width)
     right_boundary = right_shoulder.x + (horizontal_threshold * shoulder_width)
-    top_boundary = left_shoulder.y - (vertical_threshold * torso_height)  # Above shoulders
-    bottom_boundary = left_hip.y + (vertical_threshold * torso_height)    # Below hips
+    top_boundary = left_shoulder.y - (vertical_threshold * torso_height)
+    bottom_boundary = left_hip.y + (vertical_threshold * torso_height)
     
     # Check if hands are outside the gesture box
     left_hand_outside = (left_wrist.x < left_boundary or 
@@ -248,15 +311,16 @@ def hands_outside_gesture_box(results, last_outside,
                          right_wrist.y < top_boundary or 
                          right_wrist.y > bottom_boundary)
     
-    # Trigger detection if either hand is significantly outside
-    hands_outside = left_hand_outside or right_hand_outside
+    # Check if either hand is outside
+    hands_currently_outside = left_hand_outside or right_hand_outside
     
-    if hands_outside:
-        if current_time - last_outside > duration_threshold:
-            last_outside = current_time
-            return True, last_outside
+    # Increment counter if hands are outside
+    if hands_currently_outside:
+        outside_frames += 1
     
-    return False, last_outside
+    outside_percentage = (outside_frames / total_frames) * 100
+    
+    return outside_frames, total_frames, outside_percentage, hands_currently_outside
 
 
 def detect_upperbody_swaying(pose_landmarks, sway_frames, total_frames, movement_threshold=0.01):

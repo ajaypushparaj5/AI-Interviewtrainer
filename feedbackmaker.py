@@ -4,7 +4,8 @@ from docx import Document
 from docx.shared import Inches
 
 def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
-    print("[INFO] Upperbody sway:",report['upper_body_sway_count'])
+    print("[INFO] Upperbody sway:",report['upper_body_sway_percent'])
+    print("[INFO] hands outside gesture box:",report['hands_outside_gesture_box_count'])
     print("[INFO] Starting feedback document generation...")
     print("[Info] This is the recieved grade:",grade)
 
@@ -37,7 +38,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
             "leg_crossed_count": norm(report["leg_crossed_count"]),
             "leg_bouncing_count": norm(report["leg_bouncing_count"]),
             "hand_on_hip_count": norm(report.get("hand_on_hip_count", 0)),
-            "hands_outside_gesture_box_count": norm(report.get("hands_outside_gesture_box_count", 0)),
+            "hands_outside_gesture_box_count": report.get("hands_outside_gesture_box_count", 0),
             "hands_clenched_count": norm(report.get("hands_clenched_count", 0)),
             "hands_behind_back_count": norm(report.get("hands_behind_back_count", 0)),
             "hands_in_pockets_count": norm(report.get("hands_in_pockets_count", 0)),
@@ -369,7 +370,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
         doc.add_paragraph(f"Hands Behind Back: {normalized_report['hands_behind_back_count']:.2f} per minute")
         doc.add_paragraph(f"Hands in Pockets: {normalized_report['hands_in_pockets_count']:.2f} per minute")
         doc.add_paragraph(f"Upperbody Swaying Percentage: {report.get('upper_body_sway_percent', 0):.2f} per minute")
-        doc.add_paragraph(f"Hands Outside Gesture Box: {normalized_report['hands_outside_gesture_box_count']:.2f} per minute")
+        doc.add_paragraph(f"Hands Outside Gesture Box: {report.get('hands_outside_gesture_box_count',0):.2f} per minute")
         doc.add_paragraph(f"Legs Crossed: {normalized_report['leg_crossed_count']:.2f} per minute")
         doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
         doc.add_paragraph(f"Hand on Hip: {normalized_report['hand_on_hip_count']:.2f} per minute")
@@ -474,6 +475,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
             "slouching": norm(report["slouching"]),
             "leg_crossed_count": norm(report["leg_crossed_count"]),
             "leg_bouncing_count": norm(report["leg_bouncing_count"]),
+            "hands_outside_gesture_box_count":report.get('hands_outside_gesture_box_count',0),
             "hand_on_hip_count": norm(report.get("hand_on_hip_count", 0)),
             'upper_body_sway_percent':report.get('upper_body_sway_percent',0),
             "final_bpm": report.get("final_bpm", 0)
@@ -801,7 +803,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc.add_paragraph(f"Legs Crossed: {normalized_report['leg_crossed_count']:.2f} per minute")
         doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
         doc.add_paragraph(f"Hand on Hip: {normalized_report['hand_on_hip_count']:.2f} per minute")
-        doc.add_paragraph(f"Hands Outside Gesture Box: {normalized_report.get('hands_outside_gesture_box_count', 0):.2f} per minute")
+        doc.add_paragraph(f"Hands Outside Gesture Box: {report.get('hands_outside_gesture_box_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Clenched: {normalized_report.get('hands_clenched_count', 0):.2f} per minute")
         doc.add_paragraph(f"Hands Behind Back: {normalized_report.get('hands_behind_back_count', 0):.2f} per minute")
         doc.add_paragraph(f"Upperbody Swaying Percentage: {report.get('upper_body_sway_percent', 0):.2f} per minute")
