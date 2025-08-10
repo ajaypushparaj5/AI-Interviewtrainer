@@ -90,17 +90,17 @@ def run_analysis(cap, log=print, true_duration=None):
             frame = display_facial_landmarks(frame, results.face_landmarks)
         if results.pose_landmarks:
             frame = display_pose(frame, results.pose_landmarks)
-            frame = display_legs(frame, results.pose_landmarks)
+            # frame = display_legs(frame, results.pose_landmarks)
         if results.left_hand_landmarks:
             frame = display_hand(frame, results.left_hand_landmarks)
         if results.right_hand_landmarks:
             frame = display_hand(frame, results.right_hand_landmarks)
 
         if results.pose_landmarks:
-            legscrossed, lastcrossed_time = detect_crossed_legs(results.pose_landmarks, lastcrossed_time)
-            if legscrossed:
-                legcrossedcount += 1
-                log("Legs crossed for 3+ seconds!")
+            # legscrossed, lastcrossed_time = detect_crossed_legs(results.pose_landmarks, lastcrossed_time)
+            # if legscrossed:
+            #     legcrossedcount += 1
+            #     log("Legs crossed for 3+ seconds!")
             slouch, lastslouch = slouch_detector(frame, results.pose_landmarks, lastslouch)
             if slouch:
                 slouchcount += 1    
@@ -111,13 +111,13 @@ def run_analysis(cap, log=print, true_duration=None):
                 log(f"Upper body swaying detected! ({sway_percent:.1f}%)")
 
                 
-            motion_detected, sway = detect_leg_motion(
-            results.pose_landmarks, 
-            sway
-            )
-            if motion_detected:
-                legbouncingcount += 1
-                log("Leg bouncing detected!")
+            # motion_detected, sway = detect_leg_motion(
+            # results.pose_landmarks, 
+            # sway
+            # )
+            # if motion_detected:
+            #     legbouncingcount += 1
+            #     log("Leg bouncing detected!")
             
             # handsonhip,lasthandonhip=detect_hands_on_hip(results.pose_landmarks, lasthandonhip)
             # if handsonhip:
@@ -137,7 +137,7 @@ def run_analysis(cap, log=print, true_duration=None):
             #     print("Hands outside gesture box!")
             
 
-            outside_frames, total_frames, outside_percentage, currently_outside = hands_outside_gesture_box(results.pose_landmarks, outside_frames, total_frames)
+            outside_frames, total_frames, outside_percentage, currently_outside = hands_outside_gesture_box(results.pose_landmarks, outside_frames, total_frames,0.40)
             
             if currently_outside:
                 log(f"Hands outside: {outside_percentage:.1f}% of frames")
@@ -250,8 +250,8 @@ def run_analysis(cap, log=print, true_duration=None):
         'neck_touch_count' : round((necktouch_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'arms_crossed_for_3_sec_count': round((arms_crossed_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'slouching': round(abs((slouchcount)*video_duration/session_duration)) if session_duration > 0 else 0,
-        'leg_crossed_count': round((legcrossedcount)*video_duration/session_duration) if session_duration > 0 else 0,
-        'leg_bouncing_count': round((legbouncingcount)*video_duration/session_duration) if session_duration > 0 else 0,
+        # 'leg_crossed_count': round((legcrossedcount)*video_duration/session_duration) if session_duration > 0 else 0,
+        # 'leg_bouncing_count': round((legbouncingcount)*video_duration/session_duration) if session_duration > 0 else 0,
         'hand_on_hip_count': round((hand_on_hip_count)*video_duration/session_duration) if session_duration > 0 else 0,
         'hands_outside_gesture_box_count': outside_percentage,
         'hands_clenched_count': round((handsclenched_count)*video_duration/session_duration) if session_duration > 0 else 0,

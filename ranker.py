@@ -11,8 +11,8 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
             "neck_touch_count": 1,
             "arms_crossed_for_3_sec_count": 2,
             "slouching": 1,
-            "leg_crossed_count": 2,
-            "leg_bouncing_count": 8,
+            # "leg_crossed_count": 2,
+            # "leg_bouncing_count": 8,
             "hand_on_hip_count": 2,
             "hands_outside_gesture_box_count": 20,
             "hands_clenched_count": 2,
@@ -40,7 +40,7 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
     eye_touches = norm(report["eye_touch_count"])
     ear_touches = norm(report["ear_touch_count"])
     neck_touches = norm(report["neck_touch_count"])
-    leg_bouncing = norm(report["leg_bouncing_count"])
+    # leg_bouncing = norm(report["leg_bouncing_count"])
     hands_outside_gesture_box = report["hands_outside_gesture_box_count"]
     swaypercent=report['upper_body_sway_percent']
     
