@@ -1,7 +1,7 @@
        
 import os
 from docx import Document
-from docx.shared import Inches
+from docx.shared import Inches,RGBColor
 
 def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
     print("[INFO] Upperbody sway:",report['upper_body_sway_percent'])
@@ -377,31 +377,127 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
 
 
         # Detailed feedback
+    #     print("[INFO] Adding detailed feedback...")
+    #     for gesture, value in normalized_report.items():
+    #         if is_abnormal(gesture, value,abnormal_thresholds):
+    #             if gesture in gesture_feedback:
+    #                 feedback = gesture_feedback[gesture]
+    #                 doc.add_heading(feedback["title"], level=2)
+    #                 doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+    #                 doc.add_paragraph(feedback["text"])
+
+    #                 if "image" in feedback:
+    #                     image_path = os.path.join("images", feedback["image"])
+    #                     print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
+    #                     if os.path.exists(image_path):
+    #                         doc.add_picture(image_path, width=Inches(2))
+    #                         print(f"[SUCCESS] Image added: {image_path}")
+    #                     else:
+    #                         print(f"[WARNING] Image not found: {image_path}")
+    #                 if "additional" in feedback:
+    #                     doc.add_heading("Additional Notes", level=3)
+    #                     doc.add_paragraph(feedback["additional"])
+    #             else:
+    #                 print(f"[WARNING] No feedback found for abnormal gesture: {gesture}")
+    #         else:
+    #             print(f"[INFO] {gesture} is within normal range.")
+    #             print("Adding hands behind back")        
+    #     if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
+    #                 doc.add_heading("Hands behind Back", level=2)
+    #                 feed=gesture_feedback["hands_behind_back_count"]
+    #                 doc.add_paragraph(feed["text"])
+    #                 if "image" in feed:
+    #                     image_path = os.path.join("images", feed["image"])
+    #                     print(f"[INFO] Attempting to load image for hands behind back: {image_path}")
+    #                     if os.path.exists(image_path):
+    #                         doc.add_picture(image_path, width=Inches(2))
+    #                         print(f"[SUCCESS] Image added: {image_path}")
+    #                     else:
+    #                         print(f"[WARNING] Image not found: {image_path}")
+                    
+    #                 if "additional" in feed:
+    #                     doc.add_heading("Additional Notes", level=3)
+    #                     doc.add_paragraph(feed["additional"])
+    #     print("Added hands behind back")            
+    #     # Additional feedback
+    #     print("[INFO] Adding additional feedback...")
+    #     for key, feedback in additional_feedback.items():
+    #         doc.add_heading(feedback["title"], level=2)
+    #         doc.add_paragraph(feedback["text"])
+    #         if "image" in feedback:
+    #             image_path = os.path.join("images", feedback["image"])
+    #             print(f"[INFO] Attempting to load image for {key}: {image_path}")
+    #             if os.path.exists(image_path):
+    #                 doc.add_picture(image_path, width=Inches(2))
+    #                 print(f"[SUCCESS] Image added: {image_path}")
+    #             else:
+    #                 print(f"[WARNING] Image not found: {image_path}")
+    #         if "additional" in feedback:
+    #             doc.add_heading("Additional Notes", level=3)
+    #             doc.add_paragraph(feedback["additional"])
+
+    #     output_path = get_next_feedback_filename()
+    #     doc.save(output_path)
+    #     print(f"[SUCCESS] Feedback document saved to {output_path}")
+
+    # except Exception as e:
+    #     print(f"[ERROR] Failed to generate feedback document: {str(e)}")
+        expression=facial_expression
         print("[INFO] Adding detailed feedback...")
         for gesture, value in normalized_report.items():
-            if is_abnormal(gesture, value,abnormal_thresholds):
-                if gesture in gesture_feedback:
-                    feedback = gesture_feedback[gesture]
-                    doc.add_heading(feedback["title"], level=2)
-                    doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
-                    doc.add_paragraph(feedback["text"])
+            heading_text = gesture.replace('_', ' ').title() # Default text for heading if no specific feedback title
+            
+            # Determine if abnormal and set color accordingly
+            is_behavior_abnormal = is_abnormal(gesture, value, abnormal_thresholds)
+            
+            if is_behavior_abnormal:
+                color = RGBColor(255, 0, 0)  # Red 
+                print(f"[INFO] {gesture} is ABNORMAL ({round(value, 2)} per minute). Applying red color.")
+            else:
+                color = RGBColor(0, 128, 0)  # Green 
+                print(f"[INFO] {gesture} is NORMAL ({round(value, 2)} per minute). Applying green color.")
 
-                    if "image" in feedback:
-                        image_path = os.path.join("images", feedback["image"])
-                        print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
-                        if os.path.exists(image_path):
+            if gesture in gesture_feedback:
+                feedback = gesture_feedback[gesture]
+                if "title" in feedback:
+                    heading_text = feedback["title"] 
+                
+                heading = doc.add_heading(heading_text, level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = color 
+
+                doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+                doc.add_paragraph(feedback["text"])
+
+                if "image" in feedback:
+                    image_path = os.path.join("images", feedback["image"])
+                    print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
+                    if os.path.exists(image_path):
+                        try:
                             doc.add_picture(image_path, width=Inches(2))
                             print(f"[SUCCESS] Image added: {image_path}")
-                        else:
-                            print(f"[WARNING] Image not found: {image_path}")
-                    if "additional" in feedback:
-                        doc.add_heading("Additional Notes", level=3)
-                        doc.add_paragraph(feedback["additional"])
-                else:
-                    print(f"[WARNING] No feedback found for abnormal gesture: {gesture}")
+                        except Exception as img_e:
+                            print(f"[ERROR] Could not add image {image_path}: {img_e}")
+                    else:
+                        print(f"[WARNING] Image not found: {image_path}")
+                
+                if "additional" in feedback:
+                    doc.add_heading("Additional Tips", level=3)
+                    doc.add_paragraph(feedback["additional"])
             else:
-                print(f"[INFO] {gesture} is within normal range.")
-                print("Adding hands behind back")        
+                # If no specific feedback but still want to report with color
+                heading = doc.add_heading(heading_text, level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = color # Apply the determined color
+                doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+                doc.add_paragraph("No specific feedback text available for this gesture.")
+                print(f"[WARNING] No detailed feedback found for gesture: {gesture}")
+
+        print("Adding hands behind back placeholder (commented out in original).")
         if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
                     doc.add_heading("Hands behind Back", level=2)
                     feed=gesture_feedback["hands_behind_back_count"]
@@ -418,28 +514,87 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
                     if "additional" in feed:
                         doc.add_heading("Additional Notes", level=3)
                         doc.add_paragraph(feed["additional"])
-        print("Added hands behind back")            
+        print("Added hands behind back")             
         # Additional feedback
         print("[INFO] Adding additional feedback...")
-        for key, feedback in additional_feedback.items():
-            doc.add_heading(feedback["title"], level=2)
-            doc.add_paragraph(feedback["text"])
-            if "image" in feedback:
-                image_path = os.path.join("images", feedback["image"])
-                print(f"[INFO] Attempting to load image for {key}: {image_path}")
+        extra={
+            "expressionless": {
+                "title": "Being Expressionless or Neutral throughout",
+                "text": "Being expressionless or neutral throughout signals a lack of emotional connection. It makes the delivery flat. The audience may question interest or enthusiasm. Practice facial cues such as smiling, eyebrow raises, and head nods.",
+                "image": "expressionless.png",
+                "additional": "Chin Tucked In / Nose Down Shows insecurity, anxiety, or withdrawal. Reduces authority and engagement. Keep your chin parallel to the floor.Chin Out / Nose Up - Sign of confidence and assurance. Positive unless exaggerated (may appear arrogant). Use a confident chin posture, especially while entering the room or introducing yourself. "
+            },
+            "not_smiling": {
+                "title": "Not Smiling or a very minimal smile",
+                "text": "Not smiling or a very minimal smile throughout the interaction makes one appear stiff, overly serious, or disengaged. The lack of smiling can make the speaker seem unapproachable, nervous, or uninterested. It may lead the interviewer or audience to perceive a lack of enthusiasm or confidence. Practice smiling naturally during greetings, introductions, and when making positive or polite statements. ",
+                "image": "not_smiling.png", 
+                "additional": "Nose Crinkling suggests dislike, disgust, or disagreement. Can give away negative reactions unintentionally. Keep your face relaxed. Avoid micro-expressions that contradict your spoken message."
+                },
+            }
+        
+        smiling = {
+            "title": "Smile.",
+            "text": "Being expressionless or neutral throughout signals a lack of emotional connection. It makes the delivery flat. The audience may question interest or enthusiasm. Practice facial cues such as smiling, eyebrow raises, and head nods.",
+            "image": "smiling.png",
+        }
+        
+        print("[INFO] Adding facial expression feedback...")
+        if rubricscores['facial_expression'] < 3:
+            feedback_color = RGBColor(255, 0, 0) 
+            print(f"[INFO] Facial expression score ({rubricscores['facial_expression']}) is abnormal. Highlighting issues in red.")
+            
+            for action, content in extra.items(): 
+                heading = doc.add_heading(content['title'], level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = feedback_color
+
+                doc.add_paragraph(content["text"])
+                if "image" in content:
+                    image_path = os.path.join("images", content["image"])
+                    print(f"[INFO] Attempting to load image for {action}: {image_path}")
+                    if os.path.exists(image_path):
+                        try:
+                            doc.add_picture(image_path, width=Inches(2))
+                            print(f"[SUCCESS] Image added: {image_path}")
+                        except Exception as img_e:
+                            print(f"[ERROR] Could not add image {image_path}: {img_e}")
+                    else:
+                        print(f"[WARNING] Image not found: {image_path}")
+                
+                if "additional" in content:
+                    doc.add_heading("Additional Notes", level=3)
+                    doc.add_paragraph(content["additional"])
+        else:
+
+            feedback_color = RGBColor(0, 128, 0) # Green for good
+            print(f"[INFO] Facial expression score ({rubricscores['facial_expression']}) is normal. Highlighting positive feedback in green.")
+
+            heading = doc.add_heading(smiling['title'], level=2)
+            if heading.runs:
+                run = heading.runs[0]
+                run.bold = True
+                run.font.color.rgb = feedback_color
+
+            doc.add_paragraph(smiling["text"])
+            if "image" in smiling:
+                image_path = os.path.join("images", smiling["image"])
+                print(f"[INFO] Attempting to load image for smiling: {image_path}")
                 if os.path.exists(image_path):
-                    doc.add_picture(image_path, width=Inches(2))
-                    print(f"[SUCCESS] Image added: {image_path}")
+                    try:
+                        doc.add_picture(image_path, width=Inches(2))
+                        print(f"[SUCCESS] Image added: {image_path}")
+                    except Exception as img_e:
+                        print(f"[ERROR] Could not add image {img_e}: {img_e}")
                 else:
                     print(f"[WARNING] Image not found: {image_path}")
-            if "additional" in feedback:
-                doc.add_heading("Additional Notes", level=3)
-                doc.add_paragraph(feedback["additional"])
 
         output_path = get_next_feedback_filename()
         doc.save(output_path)
         print(f"[SUCCESS] Feedback document saved to {output_path}")
 
+    
     except Exception as e:
         print(f"[ERROR] Failed to generate feedback document: {str(e)}")
         
@@ -813,32 +968,126 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc.add_paragraph(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
 
 
+        # print("[INFO] Adding detailed feedback...")
+        # for gesture, value in normalized_report.items():
+        #     if is_abnormal(gesture, value,abnormal_thresholds):
+        #         if gesture in gesture_feedback:
+        #             feedback = gesture_feedback[gesture]
+        #             doc.add_heading(feedback["title"], level=2)
+        #             doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+        #             doc.add_paragraph(feedback["text"])
+
+        #             if "image" in feedback:
+        #                 image_path = os.path.join("images", feedback["image"])
+        #                 print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
+        #                 if os.path.exists(image_path):
+        #                     doc.add_picture(image_path, width=Inches(2))
+        #                     print(f"[SUCCESS] Image added: {image_path}")
+        #                 else:
+        #                     print(f"[WARNING] Image not found: {image_path}")
+                    
+        #             if "additional" in feedback:
+        #                 doc.add_heading("Additional Tips", level=3)
+        #                 doc.add_paragraph(feedback["additional"])
+        #         else:
+        #             print(f"[WARNING] No feedback found for abnormal gesture: {gesture}")
+        #     else:
+        #         print(f"[INFO] {gesture} is within normal range.")
+        # print("Adding hands behind back")        
+        # # if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
+        # #             doc.add_heading("Hands behind Back", level=2)
+        # #             feed=gesture_feedback["hands_behind_back_count"]
+        # #             doc.add_paragraph(feed["text"])
+        # #             if "image" in feed:
+        # #                 image_path = os.path.join("images", feed["image"])
+        # #                 print(f"[INFO] Attempting to load image for hands behind back: {image_path}")
+        # #                 if os.path.exists(image_path):
+        # #                     doc.add_picture(image_path, width=Inches(2))
+        # #                     print(f"[SUCCESS] Image added: {image_path}")
+        # #                 else:
+        # #                     print(f"[WARNING] Image not found: {image_path}")
+                    
+        # #             if "additional" in feed:
+        # #                 doc.add_heading("Additional Notes", level=3)
+        # #                 doc.add_paragraph(feed["additional"])
+        # # print("Added hands behind back")                        
+        # # Additional feedback
+        # print("[INFO] Adding additional feedback...")
+        # for key, feedback in additional_feedback.items():
+        #     doc.add_heading(feedback["title"], level=2)
+        #     doc.add_paragraph(feedback["text"])
+        #     if "image" in feedback:
+        #         image_path = os.path.join("images", feedback["image"])
+        #         print(f"[INFO] Attempting to load image for {key}: {image_path}")
+        #         if os.path.exists(image_path):
+        #             doc.add_picture(image_path, width=Inches(2))
+        #             print(f"[SUCCESS] Image added: {image_path}")
+        #         else:
+        #             print(f"[WARNING] Image not found: {image_path}")
+        #     if "additional" in feedback:
+        #         doc.add_heading("Additional Notes", level=3)
+        #         doc.add_paragraph(feedback["additional"])
+        # output_path = file_name
+        # if not output_path.endswith('.docx'):
+        #     output_path += '.docx'
+        # doc.save(output_path)
+        # print(f"[SUCCESS] Feedback document saved to {output_path}")
+
         print("[INFO] Adding detailed feedback...")
         for gesture, value in normalized_report.items():
-            if is_abnormal(gesture, value,abnormal_thresholds):
-                if gesture in gesture_feedback:
-                    feedback = gesture_feedback[gesture]
-                    doc.add_heading(feedback["title"], level=2)
-                    doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
-                    doc.add_paragraph(feedback["text"])
+            heading_text = gesture.replace('_', ' ').title() # Default text for heading if no specific feedback title
+            
+            # Determine if abnormal and set color accordingly
+            is_behavior_abnormal = is_abnormal(gesture, value, abnormal_thresholds)
+            
+            if is_behavior_abnormal:
+                color = RGBColor(255, 0, 0)  # Red for abnormal
+                print(f"[INFO] {gesture} is ABNORMAL ({round(value, 2)} per minute). Applying red color.")
+            else:
+                color = RGBColor(0, 128, 0)  # Green for normal
+                print(f"[INFO] {gesture} is NORMAL ({round(value, 2)} per minute). Applying green color.")
 
-                    if "image" in feedback:
-                        image_path = os.path.join("images", feedback["image"])
-                        print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
-                        if os.path.exists(image_path):
+            if gesture in gesture_feedback:
+                feedback = gesture_feedback[gesture]
+                if "title" in feedback:
+                    heading_text = feedback["title"] # Use specific feedback title if available
+                
+                heading = doc.add_heading(heading_text, level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = color # Apply the determined color
+
+                doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+                doc.add_paragraph(feedback["text"])
+
+                if "image" in feedback:
+                    image_path = os.path.join("images", feedback["image"])
+                    print(f"[INFO] Attempting to load image for {gesture}: {image_path}")
+                    if os.path.exists(image_path):
+                        try:
                             doc.add_picture(image_path, width=Inches(2))
                             print(f"[SUCCESS] Image added: {image_path}")
-                        else:
-                            print(f"[WARNING] Image not found: {image_path}")
-                    
-                    if "additional" in feedback:
-                        doc.add_heading("Additional Tips", level=3)
-                        doc.add_paragraph(feedback["additional"])
-                else:
-                    print(f"[WARNING] No feedback found for abnormal gesture: {gesture}")
+                        except Exception as img_e:
+                            print(f"[ERROR] Could not add image {image_path}: {img_e}")
+                    else:
+                        print(f"[WARNING] Image not found: {image_path}")
+                
+                if "additional" in feedback:
+                    doc.add_heading("Additional Tips", level=3)
+                    doc.add_paragraph(feedback["additional"])
             else:
-                print(f"[INFO] {gesture} is within normal range.")
-        print("Adding hands behind back")        
+                # If no specific feedback but still want to report with color
+                heading = doc.add_heading(heading_text, level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = color # Apply the determined color
+                doc.add_paragraph(f"Observed: {round(value, 2)} per minute")
+                doc.add_paragraph("No specific feedback text available for this gesture.")
+                print(f"[WARNING] No detailed feedback found for gesture: {gesture}")
+
+        print("Adding hands behind back placeholder (commented out in original).")
         # if normalized_report["hands_in_pockets_count"] >= abnormal_thresholds.get("hands_in_pockets_count", 3):
         #             doc.add_heading("Hands behind Back", level=2)
         #             feed=gesture_feedback["hands_behind_back_count"]
@@ -851,33 +1100,92 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         #                     print(f"[SUCCESS] Image added: {image_path}")
         #                 else:
         #                     print(f"[WARNING] Image not found: {image_path}")
-                    
+        #             
         #             if "additional" in feed:
         #                 doc.add_heading("Additional Notes", level=3)
         #                 doc.add_paragraph(feed["additional"])
-        # print("Added hands behind back")                        
+        # print("Added hands behind back")             
         # Additional feedback
         print("[INFO] Adding additional feedback...")
-        for key, feedback in additional_feedback.items():
-            doc.add_heading(feedback["title"], level=2)
-            doc.add_paragraph(feedback["text"])
-            if "image" in feedback:
-                image_path = os.path.join("images", feedback["image"])
-                print(f"[INFO] Attempting to load image for {key}: {image_path}")
+        extra={
+            "expressionless": {
+                "title": "Being Expressionless or Neutral throughout",
+                "text": "Being expressionless or neutral throughout signals a lack of emotional connection. It makes the delivery flat. The audience may question interest or enthusiasm. Practice facial cues such as smiling, eyebrow raises, and head nods.",
+                "image": "expressionless.png",
+                "additional": "Chin Tucked In / Nose Down Shows insecurity, anxiety, or withdrawal. Reduces authority and engagement. Keep your chin parallel to the floor.Chin Out / Nose Up - Sign of confidence and assurance. Positive unless exaggerated (may appear arrogant). Use a confident chin posture, especially while entering the room or introducing yourself. "
+            },
+            "not_smiling": {
+                "title": "Not Smiling or a very minimal smile",
+                "text": "Not smiling or a very minimal smile throughout the interaction makes one appear stiff, overly serious, or disengaged. The lack of smiling can make the speaker seem unapproachable, nervous, or uninterested. It may lead the interviewer or audience to perceive a lack of enthusiasm or confidence. Practice smiling naturally during greetings, introductions, and when making positive or polite statements. ",
+                "image": "not_smiling.png", 
+                "additional": "Nose Crinkling suggests dislike, disgust, or disagreement. Can give away negative reactions unintentionally. Keep your face relaxed. Avoid micro-expressions that contradict your spoken message."
+                },
+            }
+        
+        smiling = {
+            "title": "Smile.",
+            "text": "Being expressionless or neutral throughout signals a lack of emotional connection. It makes the delivery flat. The audience may question interest or enthusiasm. Practice facial cues such as smiling, eyebrow raises, and head nods.",
+            "image": "smiling.png",
+        }
+        
+        print("[INFO] Adding facial expression feedback...")
+        if rubricscores['facial_expression'] < 3:
+            feedback_color = RGBColor(255, 0, 0) 
+            print(f"[INFO] Facial expression score ({rubricscores['facial_expression']}) is abnormal. Highlighting issues in red.")
+            
+            for action, content in extra.items(): 
+                heading = doc.add_heading(content['title'], level=2)
+                if heading.runs:
+                    run = heading.runs[0]
+                    run.bold = True
+                    run.font.color.rgb = feedback_color
+
+                doc.add_paragraph(content["text"])
+                if "image" in content:
+                    image_path = os.path.join("images", content["image"])
+                    print(f"[INFO] Attempting to load image for {action}: {image_path}")
+                    if os.path.exists(image_path):
+                        try:
+                            doc.add_picture(image_path, width=Inches(2))
+                            print(f"[SUCCESS] Image added: {image_path}")
+                        except Exception as img_e:
+                            print(f"[ERROR] Could not add image {image_path}: {img_e}")
+                    else:
+                        print(f"[WARNING] Image not found: {image_path}")
+                
+                if "additional" in content:
+                    doc.add_heading("Additional Notes", level=3)
+                    doc.add_paragraph(content["additional"])
+        else:
+            feedback_color = RGBColor(0, 128, 0) # Green for good
+            print(f"[INFO] Facial expression score ({rubricscores['facial_expression']}) is normal. Highlighting positive feedback in green.")
+
+            heading = doc.add_heading(smiling['title'], level=2)
+            if heading.runs:
+                run = heading.runs[0]
+                run.bold = True
+                run.font.color.rgb = feedback_color
+
+            doc.add_paragraph(smiling["text"])
+            if "image" in smiling:
+                image_path = os.path.join("images", smiling["image"])
+                print(f"[INFO] Attempting to load image for smiling: {image_path}")
                 if os.path.exists(image_path):
-                    doc.add_picture(image_path, width=Inches(2))
-                    print(f"[SUCCESS] Image added: {image_path}")
+                    try:
+                        doc.add_picture(image_path, width=Inches(2))
+                        print(f"[SUCCESS] Image added: {image_path}")
+                    except Exception as img_e:
+                        print(f"[ERROR] Could not add image {img_e}: {img_e}")
                 else:
                     print(f"[WARNING] Image not found: {image_path}")
-            if "additional" in feedback:
-                doc.add_heading("Additional Notes", level=3)
-                doc.add_paragraph(feedback["additional"])
         output_path = file_name
         if not output_path.endswith('.docx'):
             output_path += '.docx'
         doc.save(output_path)
         print(f"[SUCCESS] Feedback document saved to {output_path}")
 
+
+    
     except Exception as e:
         print(f"[ERROR] Failed to generate feedback document: {str(e)}")
 

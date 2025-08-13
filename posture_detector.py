@@ -177,7 +177,7 @@ def arms_crossed_detector(results, crossed_start_time, angle_threshold=25):
     right_horizontal = is_horizontal(right_elbow, right_wrist, angle_threshold)
     wrist_inside = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x) 
     
-    currently_crossed = (left_horizontal or right_horizontal) and wrist_inside
+    currently_crossed = (left_horizontal and right_horizontal) and wrist_inside
     
     if currently_crossed:
         if crossed_start_time == 0:
