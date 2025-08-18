@@ -203,7 +203,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
 
         doc = Document()
         doc.add_heading('Personalized Feedback', level=1)
-        
+        doc.add_heading(f"Total Score: {grade['total_score']}")
         doc.add_heading("Body Language Score Table", level=2)
         table = doc.add_table(rows=1, cols=4)
         table.style = 'Table Grid'
@@ -792,7 +792,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc = Document()
         doc.add_heading('Personalized Feedback', level=1)
         
-                # Add Body Language Cue Table
+        doc.add_heading(f"Total Score: {grade['total_score']}")
         doc.add_heading("Body Language Score Table", level=2)
         table = doc.add_table(rows=1, cols=4)
         table.style = 'Table Grid'

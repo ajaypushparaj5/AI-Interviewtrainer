@@ -84,7 +84,24 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
         "facial_expression": facial_score,
     }
 
-    total_score = sum(category_scores.values())
+    # total_score = sum(category_scores.values())
+    
+    score_values = list(category_scores.values())
+
+    # Rule 1: total_score = 1 when two or more areas are 1
+    count_of_ones = score_values.count(1)
+    if count_of_ones >= 2:
+        total_score = 1
+    # Rule 2: total_score = 5 when all four areas are 5
+    elif all(score == 5 for score in score_values):
+        total_score = 5
+    # Rule 3: total_score = 3 when at least three areas are 3 or 5
+    elif sum(1 for score in score_values if score in (3, 5)) >= 3:
+        total_score = 3
+    else:
+        # If none of the specific rules apply, use the sum as a fallback or define another default
+        total_score = sum(score_values)  # Fallback to the sum if no rule matches
+
     average_score = round(total_score / len(category_scores), 2)
 
     return {

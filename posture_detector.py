@@ -119,10 +119,9 @@ def slouch_detector(rgb_frame, results, lastslouch):
     return False, lastslouch
 
     
-# def arms_crossed_detector(results, lastcrossed, angle_threshold=25):
-
+# def arms_crossed_detector(results, crossed_start_time, angle_threshold=25):
 #     if not results or not hasattr(results, 'landmark'):
-#         return False, lastcrossed
+#         return False, 0  # Reset if no pose
     
 #     current_time = time.time()
 #     lm = results.landmark
@@ -140,60 +139,133 @@ def slouch_detector(rgb_frame, results, lastslouch):
 #         angle = math.degrees(math.atan(dy / dx))
 #         return angle <= threshold_deg
     
+#     # Check if currently crossed
 #     left_horizontal = is_horizontal(left_elbow, left_wrist, angle_threshold)
 #     right_horizontal = is_horizontal(right_elbow, right_wrist, angle_threshold)
-    
 #     wrist_inside = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x) 
-     
-#     if (left_horizontal or right_horizontal) and wrist_inside:
-#         if current_time - lastcrossed > 1:
-#             lastcrossed = current_time
-#             return True, lastcrossed
     
-#     return False, lastcrossed    
+#     currently_crossed = (left_horizontal and right_horizontal) and wrist_inside
     
-def arms_crossed_detector(results, crossed_start_time, angle_threshold=25):
+#     if currently_crossed:
+#         if crossed_start_time == 0:
+#             # Just started crossing
+#             return False, current_time
+#         elif current_time - crossed_start_time >= 3.0:
+#             # Been crossing for 3+ seconds
+#             return True, 0  # Reset after detection
+#         else:
+#             # Still crossing but not 3 seconds yet
+#             return False, crossed_start_time
+#     else:
+#         # Not crossing - reset
+#         return False, 0
+    
+def arms_crossed_detector(results, crossed_start_time, angle_threshold=25, shoulder_wrist_x_threshold_ratio=0.2):
+    """
+    Detects if a person's arms are crossed and held in that position for at least 3 seconds.
+
+    Args:
+        results: An object containing pose landmarks, typically from MediaPipe Pose.
+                 Expected to have a 'landmark' attribute, which is a list of landmark objects.
+                 Each landmark object should have 'x', 'y', and 'visibility' properties.
+        crossed_start_time: The timestamp (from time.time()) when the arms were first detected
+                            as crossed. Pass 0 to indicate not currently tracking a crossed pose.
+        angle_threshold: The maximum angle (in degrees) from horizontal for the forearm
+                         to be considered 'horizontal'. Defaults to 25.
+        shoulder_wrist_x_threshold_ratio: A ratio representing how close (as a percentage of
+                                          the shoulder-to-shoulder distance in x-axis) the
+                                          wrist must be to the opposite shoulder's x-coordinate.
+                                          Defaults to 0.2 (20%).
+
+    Returns:
+        tuple: (is_crossed_for_duration, new_crossed_start_time)
+            - is_crossed_for_duration (bool): True if arms have been crossed for >= 3 seconds, False otherwise.
+            - new_crossed_start_time (float): Updated start time for the crossed pose.
+                                              If arms are no longer crossed, or the 3-second
+                                              duration is met and detected, this will reset to 0.
+    """
     if not results or not hasattr(results, 'landmark'):
-        return False, 0  # Reset if no pose
+        # If no pose results or no landmarks, reset detection state.
+        return False, 0
     
     current_time = time.time()
     lm = results.landmark
     
+    # Ensure necessary landmarks are present to avoid index errors.
+    # We need landmarks for shoulders (11, 12), elbows (13, 14), and wrists (15, 16).
+    if len(lm) < 17: 
+        return False, 0
+
+    # Define key body landmarks using MediaPipe Pose indices.
+    left_shoulder = lm[11]
+    right_shoulder = lm[12]
     left_elbow = lm[13]
     right_elbow = lm[14]
     left_wrist = lm[15]
     right_wrist = lm[16]
+
+    # Set a minimum visibility threshold for landmarks to be considered reliable.
+    min_visibility = 0.6 
+    key_landmarks = [left_shoulder, right_shoulder, left_elbow, right_elbow, left_wrist, right_wrist]
+    if any(l.visibility < min_visibility for l in key_landmarks):
+        return False, 0 # If any key landmark isn't visible enough, skip detection.
     
-    def is_horizontal(p1, p2, threshold_deg):
+    def _is_horizontal(p1, p2, threshold_deg):
+        """
+        Checks if the line formed by p1 and p2 is mostly horizontal.
+        p1 is typically the elbow, p2 the wrist.
+        """
         dx = abs(p2.x - p1.x)
         dy = abs(p2.y - p1.y)
         if dx == 0:  
-            return False
+            return False # Avoid division by zero for perfectly vertical lines.
         angle = math.degrees(math.atan(dy / dx))
         return angle <= threshold_deg
     
-    # Check if currently crossed
-    left_horizontal = is_horizontal(left_elbow, left_wrist, angle_threshold)
-    right_horizontal = is_horizontal(right_elbow, right_wrist, angle_threshold)
-    wrist_inside = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x) 
+    # Calculate the horizontal distance between shoulders to create a dynamic threshold.
+    shoulder_distance_x = abs(right_shoulder.x - left_shoulder.x)
+    # The absolute threshold for wrist-to-opposite-shoulder proximity.
+    shoulder_wrist_threshold_abs = shoulder_distance_x * shoulder_wrist_x_threshold_ratio
+
+    # --- Core Arms Crossed Detection Logic ---
+
+    # Condition 1: Check if both forearms are relatively horizontal.
+    forearms_horizontal = _is_horizontal(left_elbow, left_wrist, angle_threshold) and \
+                          _is_horizontal(right_elbow, right_wrist, angle_threshold)
+
+    # Condition 2: Check if the wrists have crossed over each other in the x-axis.
+    # This is indicated by the distance between wrists being less than the distance between elbows.
+    wrists_crossed_over_each_other = abs(left_wrist.x - right_wrist.x) < abs(left_elbow.x - right_elbow.x)
     
-    currently_crossed = (left_horizontal and right_horizontal) and wrist_inside
+    # Condition 3 (NEW & CRITICAL): Check if wrists are approximately over their opposite shoulders' x-coordinates.
+    # This prevents false positives when arms are merely held horizontally or close to the body without true crossing.
+    left_wrist_over_right_shoulder = abs(left_wrist.x - right_shoulder.x) < shoulder_wrist_threshold_abs
+    right_wrist_over_left_shoulder = abs(right_wrist.x - left_shoulder.x) < shoulder_wrist_threshold_abs
     
+    # Both wrists need to be in the vicinity of their respective opposite shoulders for a full crossed-arm pose.
+    wrists_are_over_opposite_shoulders_x = left_wrist_over_right_shoulder and right_wrist_over_left_shoulder
+    
+    # Combine all conditions to determine if arms are currently crossed.
+    currently_crossed = (
+        forearms_horizontal and
+        wrists_crossed_over_each_other and
+        wrists_are_over_opposite_shoulders_x
+    )
+
+    # --- Duration Tracking Logic ---
     if currently_crossed:
         if crossed_start_time == 0:
-            # Just started crossing
+            # Arms just started crossing; record the current time.
             return False, current_time
         elif current_time - crossed_start_time >= 3.0:
-            # Been crossing for 3+ seconds
-            return True, 0  # Reset after detection
+            # Arms have been crossed for 3 or more seconds; signal detection and reset.
+            return True, 0
         else:
-            # Still crossing but not 3 seconds yet
+            # Arms are still crossed, but not yet for the full duration.
             return False, crossed_start_time
     else:
-        # Not crossing - reset
+        # Arms are not currently crossed; reset the start time.
         return False, 0
-    
-
 
 # def hands_outside_gesture_box(results, last_outside, 
 #                             horizontal_threshold=0.15, 
