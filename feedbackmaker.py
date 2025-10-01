@@ -53,7 +53,7 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
         
         gesture_feedback = {
         "eye_contact_breaks": {
-            "title":"Eye Contact",
+            "title":"Eye Contact Breaks",
             "text": "Avoids eye contact, Glancing at ceiling or floor reflects discomfort or disengagement. Audience feels disconnected; speaker may seem uncertain or underprepared. Practice maintaining soft, steady eye contact with various parts of the audience. ",
             "image": "eye_contact_breaks.png"
             },
@@ -642,7 +642,7 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         print("[INFO] Preparing feedback descriptions...")
         gesture_feedback = {
         "eye_contact_breaks": {
-            "title":"Eye Contact",
+            "title":"Eye Contact Breaks",
             "text": "Avoids eye contact, Glancing at ceiling or floor reflects discomfort or disengagement. Audience feels disconnected; speaker may seem uncertain or underprepared. Practice maintaining soft, steady eye contact with various parts of the audience. ",
             "image": "eye_contact_breaks.png"
             },

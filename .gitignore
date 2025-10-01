@@ -14,3 +14,4 @@ checkgesture.py
 feedback/ 
 *.ico
 *.mp4
+.env
