@@ -2,6 +2,7 @@
 import os
 from docx import Document
 from docx.shared import Inches,RGBColor
+from genaifeedback import genairesponse
 
 def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
     print("[INFO] Upperbody sway:",report['upper_body_sway_percent'])
@@ -46,6 +47,8 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
             "final_bpm": report.get("final_bpm", 0)
         }
 
+        response=genairesponse(normalized_report)
+        print(response)
         print("[INFO] Normalization complete.")
 
         
@@ -374,6 +377,10 @@ def generate_feedback_doc(report,grade,abnormal_thresholds, strictness=1):
         # doc.add_paragraph(f"Legs Crossed: {normalized_report['leg_crossed_count']:.2f} per minute")
         # doc.add_paragraph(f"Leg Bouncing: {normalized_report['leg_bouncing_count']:.2f} per minute")
         doc.add_paragraph(f"Hand on Hip: {normalized_report['hand_on_hip_count']:.2f} per minute")
+        
+        doc.add_heading(f"GENAI Feedback: gemini-2.0-flash")
+        doc.add_paragraph(f"")
+        doc.add_paragraph(f"{response}")
 
 
         # Detailed feedback
@@ -635,7 +642,9 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
             'upper_body_sway_percent':report.get('upper_body_sway_percent',0),
             "final_bpm": report.get("final_bpm", 0)
         }
-
+        response=genairesponse(normalized_report)
+        print(response)
+        print("[INFO] Normalization complete.")
         print("[INFO] Normalization complete.")
 
         # Load gesture feedback
@@ -967,6 +976,9 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         doc.add_paragraph(f"[SCORE] {grade['rubric_scores']}")
         doc.add_paragraph(f"[RESULT] Total Score: {grade['total_score']}, Average Score: {grade['average_score']} , Rank: {grade['rating']}")
 
+        doc.add_heading(f"GENAI Feedback: gemini-2.0-flash")
+        doc.add_paragraph(f"")
+        doc.add_paragraph(f"{response}")
 
         # print("[INFO] Adding detailed feedback...")
         # for gesture, value in normalized_report.items():
