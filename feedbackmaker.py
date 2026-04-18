@@ -645,7 +645,6 @@ def generate_feedback_folder(report, emotion_stats , grade ,file_name ,abnormal_
         response=genairesponse(normalized_report)
         print(response)
         print("[INFO] Normalization complete.")
-        print("[INFO] Normalization complete.")
 
         # Load gesture feedback
         print("[INFO] Preparing feedback descriptions...")

@@ -1,7 +1,6 @@
 venv/
 __pycache__/
-.vscode/
-models
+.models
 .gitignore
 test.txt
 models/model.py

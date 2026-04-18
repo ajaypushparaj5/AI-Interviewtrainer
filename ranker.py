@@ -46,11 +46,15 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
     
     
     # Stance.
+    slouching = norm(report.get("slouching", 0))
+    stancemetric = swaypercent
     
-    stancemetric=swaypercent
-    stance_score = (1 if stancemetric >= 70  else
-                    3 if stancemetric >= 40 and stancemetric < 70 else
-                    5 if stancemetric < 40 else 0)
+    if stancemetric >= 70 or slouching >= 5:
+        stance_score = 1
+    elif stancemetric >= 40 or slouching >= 2:
+        stance_score = 3
+    else:
+        stance_score = 5
     
     # Eye Contact
     
@@ -60,9 +64,9 @@ def rank_user_behavior(report, facial_expression_score, strictness=1, abnormal_t
 
     #Gestures
     fitget_metric = mouth_touches + nose_touches + eye_touches + ear_touches + neck_touches
-    gesture_score=   (1 if hands_outside_gesture_box >=40 or fitget_metric > 10  else
-                    3 if hands_outside_gesture_box >= 20 and hands_outside_gesture_box < 40 else
-                    5 if hands_outside_gesture_box < 20 else 0)
+    gesture_score=   (3 if hands_outside_gesture_box >=40 or fitget_metric > 10  else
+                    5 if hands_outside_gesture_box >= 20 and hands_outside_gesture_box < 40 else
+                    1 if hands_outside_gesture_box < 20 else 0)
     
     # Facial Expression
     
