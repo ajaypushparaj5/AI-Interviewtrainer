@@ -281,31 +281,55 @@ class FeedbackApp:
         if not folder_path:
             return
 
+        video_files = []
+        for root_dir, dirs, files in os.walk(folder_path):
+            for f in files:
+                if f.lower().endswith((".mp4", ".avi", ".mov", ".mkv", ".webm")):
+                    video_files.append(os.path.join(root_dir, f))
+
+        if not video_files:
+            print("[ERROR] No video files found in the selected folder (or its subfolders).")
+            self.write_log("[ERROR] No video files found in the selected folder.")
+            return
+
         self.ask_strictness()
+        
         feedback_dir = os.path.join("feedback", os.path.basename(folder_path) + "_batch")
         os.makedirs(feedback_dir, exist_ok=True)
+        
+        self.write_log(f"[INFO] Found {len(video_files)} video(s). Starting batch analysis...")
+        self.root.after(100, lambda: self.process_next_video(folder_path, feedback_dir, video_files, 0))
 
-        for file in os.listdir(folder_path):
-            if file.lower().endswith((".mp4", ".avi", ".mov")):
-                try:
-                    video_path = os.path.join(folder_path, file)
-                    self.write_log(f"[INFO] Processing: {file}")
-                    stats = run_detection_session(video_path=video_path, log=self.write_log)
-                    print("[INFO] Analyzing facial expressions...")
-                    emotion_stats = analyze_emotions(video_path)
-                    print(f"[INFO] Emotion stats: {emotion_stats}")
-                    grade = rank_user_behavior(stats, emotion_stats, self.strictness, self.abnormal_thresholds)
-                    stats['grade'] = grade
-                    out_name = os.path.splitext(file)[0] + ".docx"
-                    custom_filename=os.path.join(feedback_dir, out_name)
-                    print(f"[INFO] Saving feedback to {custom_filename}")
-                    generate_feedback_folder(stats,emotion_stats,grade,custom_filename,self.abnormal_thresholds,self.strictness)
-                    print(f"[SUCCESS] Saved: {out_name}")
-                except Exception as e:
-                    print(f"[ERROR] Failed on {file}: {str(e)}")
+    def process_next_video(self, folder_path, feedback_dir, video_files, index):
+        if index >= len(video_files):
+            print("[INFO] Folder analysis complete.")
+            self.write_log("[INFO] Folder analysis complete.")
+            return
 
-        print("[INFO] Folder analysis complete.")
-       
+        file_path = video_files[index]
+        file_name = os.path.basename(file_path)
+        try:
+            self.write_log(f"[INFO] Processing ({index+1}/{len(video_files)}): {file_name}")
+            self.root.update()
+            
+            stats = run_detection_session(video_path=file_path, log=self.write_log)
+            print("[INFO] Analyzing facial expressions...")
+            emotion_stats = analyze_emotions(file_path)
+            print(f"[INFO] Emotion stats: {emotion_stats}")
+            grade = rank_user_behavior(stats, emotion_stats, self.strictness, self.abnormal_thresholds)
+            stats['grade'] = grade
+            out_name = os.path.splitext(file_name)[0] + ".docx"
+            custom_filename=os.path.join(feedback_dir, out_name)
+            print(f"[INFO] Saving feedback to {custom_filename}")
+            generate_feedback_folder(stats,emotion_stats,grade,custom_filename,self.abnormal_thresholds,self.strictness)
+            print(f"[SUCCESS] Saved: {out_name}")
+            self.write_log(f"[SUCCESS] Saved: {out_name}")
+        except Exception as e:
+            print(f"[ERROR] Failed on {file_name}: {str(e)}")
+            self.write_log(f"[ERROR] Failed on {file_name}: {str(e)}")
+            
+        self.root.after(100, lambda: self.process_next_video(folder_path, feedback_dir, video_files, index + 1))
+
     def ask_strictness(self):
         popup = tk.Toplevel(self.root)
         popup.title("Select Analysis Strictness")

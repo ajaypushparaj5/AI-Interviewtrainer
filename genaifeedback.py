@@ -100,7 +100,7 @@ def genairesponse(report):
         },
         {
             "role": "user", 
-            "content": f"Analyze this body language data: {report}"
+            "content": f"Analyze this body language data(Bpm is blinks per minute): {report}"
         }
     ]
 

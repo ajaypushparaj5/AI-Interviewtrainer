@@ -66,6 +66,8 @@ def run_analysis(cap, log=print, true_duration=None):
     }
     outside_frames = 0
     total_frames = 1
+    outside_percentage = 0.0
+    sway_percent = 0.0
 
 
     

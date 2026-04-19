@@ -14,3 +14,4 @@ feedback/
 *.ico
 *.mp4
 .env
+.venv
